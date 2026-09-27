@@ -51,11 +51,35 @@ export const SplashLoadingScreen: React.FC<SplashLoadingScreenProps> = ({ onLoad
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '40px 24px',
-        background: 'radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0a0d1e 65%, #05070f 100%)',
+        backgroundImage: 'radial-gradient(circle at 50% 40%, rgba(10, 13, 30, 0.45) 0%, rgba(5, 7, 15, 0.85) 75%, #03050a 100%), url("/images/splash_hero.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
       }}
       className="safe-top safe-bottom"
     >
-      <div />
+      {/* Top Cyber Badge */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(56, 189, 248, 0.3)',
+          padding: '6px 16px',
+          borderRadius: '9999px',
+          fontSize: '11px',
+          letterSpacing: '2px',
+          color: '#38bdf8',
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+        }}
+      >
+        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
+        UNREAL ENGINE 5 POWERED • AAA MOBILE
+      </div>
 
       {/* Main Logo Showcase */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>

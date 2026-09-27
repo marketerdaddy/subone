@@ -1,19 +1,25 @@
 export type GameState =
   | 'LOADING'
   | 'MAIN_MENU'
+  | 'LEVEL_INTRO'
   | 'COUNTDOWN'
   | 'PLAYING'
   | 'PAUSED'
   | 'LEVEL_COMPLETE'
+  | 'VICTORY'
   | 'GAME_OVER'
   | 'REVIVE'
   | 'SHOP'
   | 'CHARACTERS'
+  | 'CUSTOMIZATION'
+  | 'EVENTS'
+  | 'CLANS'
   | 'MISSIONS'
   | 'PROFILE'
   | 'LEADERBOARD'
   | 'SETTINGS'
-  | 'DAILY_REWARD';
+  | 'DAILY_REWARD'
+  | 'EMAIL_RECEIPT';
 
 export type CharacterRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
@@ -37,11 +43,15 @@ export interface Character {
   title: string;
   description: string;
   rarity: CharacterRarity;
+  avatarUrl?: string;
+  fullImageUrl?: string;
   stats: {
     speed: number;   // 0 - 100
     jump: number;    // 0 - 100
     shield: number;  // 0 - 100
     magnet: number;  // 0 - 100
+    agility?: number;
+    power?: number;
   };
   ability: {
     name: string;
@@ -240,4 +250,24 @@ export interface PurchaseTransaction {
   createdAt: string;
   emailSent: boolean;
   recipientEmail?: string;
+}
+
+export interface EmailPayload {
+  toEmail: string;
+  playerName: string;
+  orderId: string;
+  productName: string;
+  quantity: number;
+  amount: number;
+  currency: string;
+  purchaseDate: string;
+  transactionId: string;
+}
+
+export interface StoredReceipt extends EmailPayload {
+  id: string;
+  subject: string;
+  htmlBody: string;
+  status: 'SENT' | 'SIMULATED';
+  timestamp: string;
 }

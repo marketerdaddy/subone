@@ -1,10 +1,9 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle2, Trophy, Compass, Gamepad2, Award, ShoppingBag, Settings, HelpCircle, LogOut, Terminal } from 'lucide-react';
-import { PlayerProfile as IPlayerProfile } from '../../types/game';
+import { PlayerProfile as IPlayerProfile, StoredReceipt } from '../../types/game';
 import { CurrencyDisplay } from '../common/CurrencyDisplay';
 import { ProgressBar } from '../common/ProgressBar';
 import { gameApi } from '../../services/api/gameApi';
-import { StoredReceipt } from '../../server/services/emailService';
 
 interface PlayerProfileProps {
   profile: IPlayerProfile;

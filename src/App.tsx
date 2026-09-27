@@ -16,12 +16,32 @@ import { LeaderboardScreen } from './components/screens/LeaderboardScreen';
 import { SettingsModal } from './components/screens/SettingsModal';
 import { GameOverModal } from './components/screens/GameOverModal';
 import { PauseModal } from './components/screens/PauseModal';
+import { LevelIntroScreen } from './components/screens/LevelIntroScreen';
+import { VictoryScreen } from './components/screens/VictoryScreen';
+import { EventsScreen } from './components/screens/EventsScreen';
+import { ClanScreen } from './components/screens/ClanScreen';
+import { CharacterCustomization } from './components/screens/CharacterCustomization';
+import { PurchaseEmailModal } from './components/screens/PurchaseEmailModal';
 import { AdminDashboardModal } from './components/screens/AdminDashboardModal';
+import { generateLevelInfo } from './config/gameConfig';
 
 export const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>('LOADING');
   const [profile, setProfile] = useState<PlayerProfile>(storageService.loadProfile());
   const [showAdmin, setShowAdmin] = useState<boolean>(false);
+  const [showEmailReceipt, setShowEmailReceipt] = useState<boolean>(false);
+  const [emailReceiptData, setEmailReceiptData] = useState<{
+    orderId: string;
+    productName: string;
+    amount: string;
+    date: string;
+  }>({
+    orderId: 'NR20260927-4587',
+    productName: 'Shadow Runner (Legendary Character)',
+    amount: '₹299',
+    date: 'Sep 27, 2026, 04:32 PM',
+  });
+  const [targetLevel, setTargetLevel] = useState<number>(profile.level);
 
   // Gameplay state
   const [currentScore, setCurrentScore] = useState<number>(0);
@@ -106,7 +126,7 @@ export const App: React.FC = () => {
           gameApi.submitScore(runData.score, runData.distance, runData.coins);
           gameApi.syncProfile(updated);
 
-          setGameState('GAME_OVER');
+          setGameState('VICTORY');
         },
       });
 
@@ -207,7 +227,10 @@ export const App: React.FC = () => {
       {gameState === 'MAIN_MENU' && (
         <MainMenu
           profile={profile}
-          onPlay={(levelNum, isEndless) => handleStartRun(levelNum, isEndless)}
+          onPlay={(levelNum, isEndless) => {
+            setTargetLevel(levelNum);
+            setGameState('LEVEL_INTRO');
+          }}
           onOpenCharacters={() => setGameState('CHARACTERS')}
           onOpenShop={() => setGameState('SHOP')}
           onOpenMissions={() => setGameState('MISSIONS')}
@@ -215,10 +238,22 @@ export const App: React.FC = () => {
           onOpenLeaderboard={() => setGameState('LEADERBOARD')}
           onOpenDailyRewards={() => setGameState('DAILY_REWARD')}
           onOpenSettings={() => setGameState('SETTINGS')}
+          onOpenEvents={() => setGameState('EVENTS')}
+          onOpenClans={() => setGameState('CLANS')}
+          onOpenCustomization={() => setGameState('CUSTOMIZATION')}
         />
       )}
 
-      {/* 3. Gameplay Screen HUD */}
+      {/* 3. Cinematic Level Introduction */}
+      {gameState === 'LEVEL_INTRO' && (
+        <LevelIntroScreen
+          levelInfo={generateLevelInfo(targetLevel)}
+          onStartRun={() => handleStartRun(targetLevel)}
+          onBack={() => setGameState('MAIN_MENU')}
+        />
+      )}
+
+      {/* 4. Gameplay Screen HUD */}
       {gameState === 'PLAYING' && (
         <GameplayHUD
           score={currentScore}
@@ -232,7 +267,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 4. Pause Screen Modal */}
+      {/* 5. Pause Screen Modal */}
       {gameState === 'PAUSED' && (
         <PauseModal
           onResume={handleResume}
@@ -245,7 +280,26 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 5. Game Over Screen Modal */}
+      {/* 6. Victory Screen Modal */}
+      {gameState === 'VICTORY' && (
+        <VictoryScreen
+          score={lastRunData.score}
+          distance={lastRunData.distance}
+          coins={lastRunData.coins}
+          combo={currentCombo}
+          xpGained={Math.floor(lastRunData.distance * 0.8)}
+          level={profile.level}
+          isNewRecord={isNewHighScore}
+          onContinue={() => {
+            setTargetLevel(profile.level);
+            setGameState('LEVEL_INTRO');
+          }}
+          onReplay={() => handleStartRun(profile.level)}
+          onHome={() => setGameState('MAIN_MENU')}
+        />
+      )}
+
+      {/* 7. Game Over Screen Modal */}
       {gameState === 'GAME_OVER' && (
         <GameOverModal
           runData={lastRunData}
@@ -258,7 +312,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 6. Characters Screen */}
+      {/* 8. Characters Screen */}
       {gameState === 'CHARACTERS' && (
         <CharacterSelection
           profile={profile}
@@ -268,7 +322,47 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 7. Shop Screen */}
+      {/* 9. Character Customization */}
+      {gameState === 'CUSTOMIZATION' && (
+        <CharacterCustomization
+          character={CHARACTERS.find((c) => c.id === profile.selectedCharacterId) || CHARACTERS[0]}
+          onBack={() => setGameState('MAIN_MENU')}
+          onSaveCustomization={(charId, skinId) => {
+            const char = CHARACTERS.find((c) => c.id === charId);
+            if (char) {
+              char.activeSkinId = skinId;
+              handleSelectCharacter(char);
+            }
+            setGameState('MAIN_MENU');
+          }}
+        />
+      )}
+
+      {/* 10. Limited-Time Events */}
+      {gameState === 'EVENTS' && (
+        <EventsScreen
+          coins={profile.coins}
+          gems={profile.gems}
+          onBack={() => setGameState('MAIN_MENU')}
+          onPlayEventRun={(lvl) => handleStartRun(lvl)}
+          onClaimReward={(reward) => {
+            const updated = storageService.updateCoinsAndGems(reward.coins || 0, reward.gems || 0);
+            setProfile(updated);
+          }}
+        />
+      )}
+
+      {/* 11. Clan Screen & Boss Raids */}
+      {gameState === 'CLANS' && (
+        <ClanScreen
+          coins={profile.coins}
+          gems={profile.gems}
+          onBack={() => setGameState('MAIN_MENU')}
+          onAttackBoss={(_bossId) => handleStartRun(profile.level)}
+        />
+      )}
+
+      {/* 12. Shop Screen */}
       {gameState === 'SHOP' && (
         <ShopScreen
           profile={profile}
@@ -277,7 +371,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 8. Player Profile Screen */}
+      {/* 13. Player Profile Screen */}
       {gameState === 'PROFILE' && (
         <PlayerProfileScreen
           profile={profile}
@@ -287,7 +381,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 9. Missions Screen */}
+      {/* 14. Missions Screen */}
       {gameState === 'MISSIONS' && (
         <MissionsScreen
           profile={profile}
@@ -296,7 +390,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 10. Leaderboard Screen */}
+      {/* 15. Leaderboard Screen */}
       {gameState === 'LEADERBOARD' && (
         <LeaderboardScreen
           profile={profile}
@@ -304,7 +398,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 11. Daily Rewards Modal */}
+      {/* 16. Daily Rewards Modal */}
       {gameState === 'DAILY_REWARD' && (
         <DailyRewardsModal
           profile={profile}
@@ -313,7 +407,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 12. Settings Modal */}
+      {/* 17. Settings Modal */}
       {gameState === 'SETTINGS' && (
         <SettingsModal
           profile={profile}
@@ -322,7 +416,19 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 13. Admin Dashboard Modal */}
+      {/* 18. Purchase Confirmation Email Preview Modal */}
+      {showEmailReceipt && (
+        <PurchaseEmailModal
+          orderId={emailReceiptData.orderId}
+          productName={emailReceiptData.productName}
+          amount={emailReceiptData.amount}
+          date={emailReceiptData.date}
+          playerName={profile.username}
+          onClose={() => setShowEmailReceipt(false)}
+        />
+      )}
+
+      {/* 19. Admin Dashboard Modal */}
       {showAdmin && (
         <AdminDashboardModal
           profile={profile}

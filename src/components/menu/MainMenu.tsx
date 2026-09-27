@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Settings, Gift, Trophy, Crown, Play, Home, ListTodo, Users, ShoppingBag, User, Infinity as InfinityIcon } from 'lucide-react';
 import { PlayerProfile } from '../../types/game';
 import { CHARACTERS, generateLevelInfo } from '../../config/gameConfig';
@@ -15,6 +15,9 @@ interface MainMenuProps {
   onOpenLeaderboard: () => void;
   onOpenDailyRewards: () => void;
   onOpenSettings: () => void;
+  onOpenEvents?: () => void;
+  onOpenClans?: () => void;
+  onOpenCustomization?: () => void;
 }
 
 export const MainMenu: React.FC<MainMenuProps> = ({
@@ -27,6 +30,9 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   onOpenLeaderboard,
   onOpenDailyRewards,
   onOpenSettings,
+  onOpenEvents,
+  onOpenClans,
+  onOpenCustomization,
 }) => {
   const [activeNav, setActiveNav] = useState<'home' | 'missions' | 'characters' | 'shop' | 'profile'>('home');
   const [isEndlessMode, setIsEndlessMode] = useState<boolean>(false);
@@ -51,7 +57,10 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        background: 'radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0a0d1e 65%, #05070f 100%)',
+        backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(10, 13, 30, 0.4) 0%, rgba(5, 7, 15, 0.85) 75%, #05070f 100%), url("/images/main_menu_bg.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
         overflow: 'hidden',
       }}
       className="safe-top safe-bottom"
@@ -63,8 +72,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '16px 20px',
-          background: 'rgba(15, 23, 42, 0.65)',
-          backdropFilter: 'blur(12px)',
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(14px)',
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         }}
       >
@@ -78,14 +87,15 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           }}
         >
           <img
-            src={profile.avatar}
+            src={selectedChar.avatarUrl || profile.avatar}
             alt={profile.username}
             style={{
-              width: 40,
-              height: 40,
+              width: 42,
+              height: 42,
               borderRadius: '12px',
               border: '2px solid #38bdf8',
               objectFit: 'cover',
+              boxShadow: '0 0 12px rgba(56, 189, 248, 0.4)',
             }}
           />
           <div>
@@ -93,7 +103,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               {profile.username}
             </div>
             <div style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 700 }}>
-              Lv. {profile.level}
+              Lv. {profile.level} • {selectedChar.name}
             </div>
           </div>
         </div>
@@ -132,6 +142,81 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           position: 'relative',
         }}
       >
+        {/* Left Floating Action Badges: Events & Clans */}
+        <div
+          style={{
+            position: 'absolute',
+            left: 20,
+            top: '20%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            zIndex: 10,
+          }}
+        >
+          {onOpenEvents && (
+            <button
+              onClick={onOpenEvents}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                background: 'rgba(15, 23, 42, 0.8)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(236, 72, 153, 0.5)',
+                borderRadius: '16px',
+                padding: '10px',
+                color: '#ec4899',
+                cursor: 'pointer',
+                position: 'relative',
+                boxShadow: '0 4px 16px rgba(236, 72, 153, 0.3)',
+              }}
+            >
+              <span style={{ fontSize: '20px' }}>⚡</span>
+              <span style={{ fontSize: '10px', fontWeight: 800, marginTop: '4px', color: '#f8fafc' }}>
+                Events
+              </span>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: '#ec4899',
+                  boxShadow: '0 0 6px #ec4899',
+                }}
+              />
+            </button>
+          )}
+
+          {onOpenClans && (
+            <button
+              onClick={onOpenClans}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                background: 'rgba(15, 23, 42, 0.8)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(56, 189, 248, 0.5)',
+                borderRadius: '16px',
+                padding: '10px',
+                color: '#38bdf8',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(56, 189, 248, 0.3)',
+              }}
+            >
+              <span style={{ fontSize: '20px' }}>🛡️</span>
+              <span style={{ fontSize: '10px', fontWeight: 800, marginTop: '4px', color: '#f8fafc' }}>
+                Clans
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* Right Floating Action Badges: Daily, Badges, Ranks */}
         <div
           style={{
             position: 'absolute',
@@ -223,94 +308,80 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           </button>
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <h1
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(24px, 6vw, 32px)',
+              fontSize: 'clamp(26px, 6vw, 36px)',
               fontWeight: 900,
               letterSpacing: '1px',
               color: '#ffffff',
-              textShadow: '0 0 20px rgba(56, 189, 248, 0.5)',
+              textShadow: '0 0 25px rgba(56, 189, 248, 0.6)',
             }}
           >
             YOUR NEXT RUN AWAITS
           </h1>
-          <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
+          <p style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '4px', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
             Reach higher. Go further. Be legendary.
           </p>
         </div>
 
+        {/* Center Character Showcase on Pedestal */}
         <div
           onClick={onOpenCharacters}
           style={{
-            width: '200px',
-            height: '240px',
+            width: '210px',
+            height: '250px',
             borderRadius: '24px',
-            background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 100%)',
-            border: '2px solid rgba(56, 189, 248, 0.3)',
+            background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.85) 100%)',
+            border: '2px solid rgba(56, 189, 248, 0.4)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.15)',
+            justifyContent: 'flex-end',
+            boxShadow: '0 15px 45px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.25)',
             position: 'relative',
             cursor: 'pointer',
-            marginBottom: '20px',
+            marginBottom: '16px',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div
-              style={{
-                width: 36,
-                height: 42,
-                borderRadius: '10px',
-                background: '#fbcfe8',
-                border: '3px solid #1e293b',
-                position: 'relative',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 14,
-                  left: 4,
-                  right: 4,
-                  height: 10,
-                  borderRadius: '4px',
-                  background: selectedChar.skins[0]?.colorScheme?.glow || '#38bdf8',
-                  boxShadow: '0 0 8px currentColor',
-                }}
-              />
-            </div>
-            <div
-              style={{
-                width: 56,
-                height: 64,
-                marginTop: 4,
-                borderRadius: '12px',
-                background: selectedChar.skins[0]?.colorScheme?.primary || '#e11d48',
-                boxShadow: `0 0 16px ${selectedChar.skins[0]?.colorScheme?.glow || '#38bdf8'}55`,
-              }}
-            />
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-              <div style={{ width: 20, height: 44, borderRadius: '6px', background: selectedChar.skins[0]?.colorScheme?.secondary || '#1e293b' }} />
-              <div style={{ width: 20, height: 44, borderRadius: '6px', background: selectedChar.skins[0]?.colorScheme?.secondary || '#1e293b' }} />
-            </div>
-          </div>
+          <img
+            src={selectedChar.avatarUrl || '/images/char_zayn.jpg'}
+            alt={selectedChar.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center top',
+              transform: 'scale(1.08)',
+            }}
+          />
 
           <div
             style={{
               position: 'absolute',
-              bottom: 8,
-              fontSize: '11px',
-              color: '#38bdf8',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '45px',
+              background: 'linear-gradient(180deg, transparent 0%, rgba(7, 11, 20, 0.95) 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            {selectedChar.name} • Tap to Change
+            <div
+              style={{
+                fontSize: '11px',
+                color: '#38bdf8',
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+              }}
+            >
+              {selectedChar.name} • Tap to Inspect
+            </div>
           </div>
         </div>
 

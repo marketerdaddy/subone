@@ -117,62 +117,58 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ profile, onBack, onProfi
 
       {/* Main Content Area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
-        {/* Featured Card (Shadow Runner) */}
+        {/* Featured Card (Shadow Runner Bundle) */}
         {featuredItem && activeTab === 'all' && (
           <div style={{ marginBottom: '24px' }}>
             <div style={{ fontSize: '13px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '10px' }}>
-              Featured
+              Featured Bundle (Limited-Time)
             </div>
             <div
               style={{
-                background: 'linear-gradient(135deg, rgba(30, 27, 75, 0.9), rgba(76, 29, 149, 0.6))',
-                border: '1px solid rgba(192, 132, 252, 0.35)',
-                borderRadius: '20px',
-                padding: '18px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                boxShadow: '0 8px 32px rgba(126, 34, 206, 0.25)',
+                borderRadius: '24px',
+                overflow: 'hidden',
+                border: '2px solid rgba(217, 70, 239, 0.4)',
+                boxShadow: '0 12px 35px rgba(217, 70, 239, 0.25)',
+                position: 'relative',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: '16px',
-                    background: 'radial-gradient(circle, #7e22ce, #3b0764)',
-                    border: '1px solid #c084fc',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 0 16px rgba(192, 132, 252, 0.5)',
-                  }}
-                >
-                  <ShieldCheck size={36} color="#f472b6" />
-                </div>
+              <img
+                src="/images/shop_featured.jpg"
+                alt="Shadow Operative Bundle"
+                style={{ width: '100%', height: '170px', objectFit: 'cover', display: 'block' }}
+              />
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, rgba(30, 27, 75, 0.95), rgba(15, 23, 42, 0.95))',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderTop: '1px solid rgba(217, 70, 239, 0.3)',
+                }}
+              >
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 900, color: '#ffffff' }}>
                       {featuredItem.title}
                     </span>
-                    <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', background: '#d946ef', color: '#ffffff' }}>
-                      Legendary
+                    <span style={{ fontSize: '10px', fontWeight: 900, padding: '2px 8px', borderRadius: '4px', background: '#d946ef', color: '#ffffff' }}>
+                      50% OFF
                     </span>
                   </div>
                   <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '3px' }}>
                     {featuredItem.description}
                   </div>
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: '#facc15' }}>
-                  ₹{featuredItem.priceAmount}
-                </span>
-                <GameButton size="sm" onClick={() => setSelectedPurchaseItem(featuredItem)}>
-                  Buy
-                </GameButton>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 900, color: '#facc15' }}>
+                    ₹{featuredItem.priceAmount}
+                  </span>
+                  <GameButton variant="gold" size="sm" onClick={() => setSelectedPurchaseItem(featuredItem)}>
+                    BUY NOW
+                  </GameButton>
+                </div>
               </div>
             </div>
           </div>
