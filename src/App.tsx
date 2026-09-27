@@ -1,0 +1,341 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { GameState, PlayerProfile, ActivePowerup, Character, GameSettings } from './types/game';
+import { storageService } from './services/storage/storageService';
+import { gameApi } from './services/api/gameApi';
+import { GameEngine } from './game/engine/GameEngine';
+import { CHARACTERS } from './config/gameConfig';
+import { SplashLoadingScreen } from './components/screens/SplashLoadingScreen';
+import { MainMenu } from './components/menu/MainMenu';
+import { GameplayHUD } from './components/hud/GameplayHUD';
+import { ShopScreen } from './components/screens/ShopScreen';
+import { CharacterSelection } from './components/screens/CharacterSelection';
+import { PlayerProfile as PlayerProfileScreen } from './components/screens/PlayerProfile';
+import { MissionsScreen } from './components/screens/MissionsScreen';
+import { DailyRewardsModal } from './components/screens/DailyRewardsModal';
+import { LeaderboardScreen } from './components/screens/LeaderboardScreen';
+import { SettingsModal } from './components/screens/SettingsModal';
+import { GameOverModal } from './components/screens/GameOverModal';
+import { PauseModal } from './components/screens/PauseModal';
+import { AdminDashboardModal } from './components/screens/AdminDashboardModal';
+
+export const App: React.FC = () => {
+  const [gameState, setGameState] = useState<GameState>('LOADING');
+  const [profile, setProfile] = useState<PlayerProfile>(storageService.loadProfile());
+  const [showAdmin, setShowAdmin] = useState<boolean>(false);
+
+  // Gameplay state
+  const [currentScore, setCurrentScore] = useState<number>(0);
+  const [currentDistance, setCurrentDistance] = useState<number>(0);
+  const [runCoins, setRunCoins] = useState<number>(0);
+  const [currentCombo, setCurrentCombo] = useState<number>(1);
+  const [currentMultiplier, setCurrentMultiplier] = useState<number>(1);
+  const [activePowerups, setActivePowerups] = useState<ActivePowerup[]>([]);
+  const [lastRunData, setLastRunData] = useState<{
+    score: number;
+    distance: number;
+    coins: number;
+    obstaclesAvoided: number;
+  }>({ score: 0, distance: 0, coins: 0, obstaclesAvoided: 0 });
+  const [isNewHighScore, setIsNewHighScore] = useState<boolean>(false);
+
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const gameEngineRef = useRef<GameEngine | null>(null);
+
+  // Initial cloud sync
+  useEffect(() => {
+    gameApi.getProfile().then((serverProfile) => {
+      if (serverProfile) {
+        setProfile(serverProfile);
+        storageService.saveProfile(serverProfile);
+      }
+    });
+  }, []);
+
+  // Initialize 3D GameEngine once container is mounted
+  useEffect(() => {
+    if (!canvasContainerRef.current) return;
+
+    if (!gameEngineRef.current) {
+      const engine = new GameEngine(canvasContainerRef.current, {
+        onScoreUpdate: (score, distance, coins, combo, multiplier) => {
+          setCurrentScore(score);
+          setCurrentDistance(distance);
+          setRunCoins(coins);
+          setCurrentCombo(combo);
+          setCurrentMultiplier(multiplier);
+        },
+        onPowerupUpdate: (powerups) => {
+          setActivePowerups(powerups);
+        },
+        onGameOver: (runData) => {
+          const isHigh = runData.score > profile.stats.highestScore;
+          setIsNewHighScore(isHigh);
+          setLastRunData(runData);
+
+          const updated = storageService.recordRun(
+            runData.score,
+            runData.distance,
+            runData.coins,
+            runData.obstaclesAvoided,
+            Math.floor(runData.distance * 0.4)
+          );
+          setProfile(updated);
+          gameApi.submitScore(runData.score, runData.distance, runData.coins);
+          gameApi.syncProfile(updated);
+
+          setGameState('GAME_OVER');
+        },
+        onLevelComplete: (levelNumber, runData) => {
+          const isHigh = runData.score > profile.stats.highestScore;
+          setIsNewHighScore(isHigh);
+          setLastRunData({ ...runData, obstaclesAvoided: 15 });
+
+          let updated = storageService.recordRun(
+            runData.score,
+            runData.distance,
+            runData.coins,
+            15,
+            Math.floor(runData.distance * 0.8)
+          );
+          // Advance level!
+          if (updated.level === levelNumber) {
+            updated.level += 1;
+            storageService.saveProfile(updated);
+          }
+          setProfile(updated);
+          gameApi.submitScore(runData.score, runData.distance, runData.coins);
+          gameApi.syncProfile(updated);
+
+          setGameState('GAME_OVER');
+        },
+      });
+
+      engine.applyQualitySettings(profile.settings.graphicsQuality);
+      const activeChar = CHARACTERS.find((c) => c.id === profile.selectedCharacterId) || CHARACTERS[0];
+      engine.setCharacter(activeChar);
+
+      gameEngineRef.current = engine;
+    }
+
+    return () => {
+      if (gameEngineRef.current) {
+        gameEngineRef.current.destroy();
+        gameEngineRef.current = null;
+      }
+    };
+  }, [profile.selectedCharacterId, profile.settings.graphicsQuality, profile.stats.highestScore]);
+
+  // Start game run
+  const handleStartRun = (levelNumber: number = 1, isEndless: boolean = false) => {
+    setCurrentScore(0);
+    setCurrentDistance(0);
+    setRunCoins(0);
+    setCurrentCombo(1);
+    setActivePowerups([]);
+    setGameState('PLAYING');
+
+    if (gameEngineRef.current) {
+      const char = CHARACTERS.find((c) => c.id === profile.selectedCharacterId) || CHARACTERS[0];
+      gameEngineRef.current.setCharacter(char);
+      gameEngineRef.current.startRun(levelNumber, isEndless);
+    }
+  };
+
+  const handlePause = () => {
+    if (gameEngineRef.current) {
+      gameEngineRef.current.pause();
+    }
+    setGameState('PAUSED');
+  };
+
+  const handleResume = () => {
+    if (gameEngineRef.current) {
+      gameEngineRef.current.resume();
+    }
+    setGameState('PLAYING');
+  };
+
+  const handleRevive = () => {
+    // Deduct 5 gems
+    const updated = storageService.updateCoinsAndGems(0, -5);
+    setProfile(updated);
+    if (gameEngineRef.current) {
+      gameEngineRef.current.revive();
+    }
+    setGameState('PLAYING');
+  };
+
+  const handleDoubleCoins = () => {
+    const bonus = lastRunData.coins;
+    const updated = storageService.updateCoinsAndGems(bonus, 0);
+    setProfile(updated);
+  };
+
+  const handleSelectCharacter = (character: Character) => {
+    if (gameEngineRef.current) {
+      gameEngineRef.current.setCharacter(character);
+    }
+  };
+
+  const handleSettingsChanged = (newSettings: GameSettings) => {
+    if (gameEngineRef.current) {
+      gameEngineRef.current.applyQualitySettings(newSettings.graphicsQuality);
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+      {/* 3D WebGL Canvas Viewport */}
+      <div
+        ref={canvasContainerRef}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 1,
+          width: '100%',
+          height: '100%',
+          cursor: gameState === 'PLAYING' ? 'grab' : 'default',
+        }}
+      />
+
+      {/* 1. Loading Splash Screen */}
+      {gameState === 'LOADING' && (
+        <SplashLoadingScreen onLoaded={() => setGameState('MAIN_MENU')} />
+      )}
+
+      {/* 2. Main Menu */}
+      {gameState === 'MAIN_MENU' && (
+        <MainMenu
+          profile={profile}
+          onPlay={(levelNum, isEndless) => handleStartRun(levelNum, isEndless)}
+          onOpenCharacters={() => setGameState('CHARACTERS')}
+          onOpenShop={() => setGameState('SHOP')}
+          onOpenMissions={() => setGameState('MISSIONS')}
+          onOpenProfile={() => setGameState('PROFILE')}
+          onOpenLeaderboard={() => setGameState('LEADERBOARD')}
+          onOpenDailyRewards={() => setGameState('DAILY_REWARD')}
+          onOpenSettings={() => setGameState('SETTINGS')}
+        />
+      )}
+
+      {/* 3. Gameplay Screen HUD */}
+      {gameState === 'PLAYING' && (
+        <GameplayHUD
+          score={currentScore}
+          distance={currentDistance}
+          runCoins={runCoins}
+          combo={currentCombo}
+          multiplier={currentMultiplier}
+          activePowerups={activePowerups}
+          profile={profile}
+          onPause={handlePause}
+        />
+      )}
+
+      {/* 4. Pause Screen Modal */}
+      {gameState === 'PAUSED' && (
+        <PauseModal
+          onResume={handleResume}
+          onRestart={() => handleStartRun(profile.level)}
+          onHome={() => {
+            if (gameEngineRef.current) gameEngineRef.current.stop();
+            setGameState('MAIN_MENU');
+          }}
+          onOpenSettings={() => setGameState('SETTINGS')}
+        />
+      )}
+
+      {/* 5. Game Over Screen Modal */}
+      {gameState === 'GAME_OVER' && (
+        <GameOverModal
+          runData={lastRunData}
+          profile={profile}
+          isNewHighScore={isNewHighScore}
+          onRevive={handleRevive}
+          onRetry={() => handleStartRun(profile.level)}
+          onHome={() => setGameState('MAIN_MENU')}
+          onDoubleCoins={handleDoubleCoins}
+        />
+      )}
+
+      {/* 6. Characters Screen */}
+      {gameState === 'CHARACTERS' && (
+        <CharacterSelection
+          profile={profile}
+          onBack={() => setGameState('MAIN_MENU')}
+          onSelectCharacter={handleSelectCharacter}
+          onProfileUpdated={(updated) => setProfile(updated)}
+        />
+      )}
+
+      {/* 7. Shop Screen */}
+      {gameState === 'SHOP' && (
+        <ShopScreen
+          profile={profile}
+          onBack={() => setGameState('MAIN_MENU')}
+          onProfileUpdated={(updated) => setProfile(updated)}
+        />
+      )}
+
+      {/* 8. Player Profile Screen */}
+      {gameState === 'PROFILE' && (
+        <PlayerProfileScreen
+          profile={profile}
+          onBack={() => setGameState('MAIN_MENU')}
+          onOpenSettings={() => setGameState('SETTINGS')}
+          onOpenAdmin={() => setShowAdmin(true)}
+        />
+      )}
+
+      {/* 9. Missions Screen */}
+      {gameState === 'MISSIONS' && (
+        <MissionsScreen
+          profile={profile}
+          onBack={() => setGameState('MAIN_MENU')}
+          onProfileUpdated={(updated) => setProfile(updated)}
+        />
+      )}
+
+      {/* 10. Leaderboard Screen */}
+      {gameState === 'LEADERBOARD' && (
+        <LeaderboardScreen
+          profile={profile}
+          onBack={() => setGameState('MAIN_MENU')}
+        />
+      )}
+
+      {/* 11. Daily Rewards Modal */}
+      {gameState === 'DAILY_REWARD' && (
+        <DailyRewardsModal
+          profile={profile}
+          onClose={() => setGameState('MAIN_MENU')}
+          onProfileUpdated={(updated) => setProfile(updated)}
+        />
+      )}
+
+      {/* 12. Settings Modal */}
+      {gameState === 'SETTINGS' && (
+        <SettingsModal
+          profile={profile}
+          onBack={() => setGameState('MAIN_MENU')}
+          onSettingsChanged={handleSettingsChanged}
+        />
+      )}
+
+      {/* 13. Admin Dashboard Modal */}
+      {showAdmin && (
+        <AdminDashboardModal
+          profile={profile}
+          onClose={() => setShowAdmin(false)}
+          onProfileUpdated={(updated) => setProfile(updated)}
+          onStartLevel={(lvl) => {
+            setShowAdmin(false);
+            handleStartRun(lvl);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+export default App;
