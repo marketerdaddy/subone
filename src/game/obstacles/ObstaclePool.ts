@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GAME_CONSTANTS } from '../../config/gameConfig';
+import { ProceduralTextures } from '../textures/ProceduralTextures';
 
 export type ObstacleType = 'HURDLE' | 'HIGH_BARRIER' | 'TRAIN' | 'RAMP' | 'PILLAR';
 
@@ -21,12 +22,48 @@ export class ObstaclePool {
   public group: THREE.Group;
   public obstacles: ObstacleInstance[] = [];
 
+  // Reusable PBR Materials
+  private hazardMat!: THREE.MeshStandardMaterial;
+  private industrialMetalMat!: THREE.MeshStandardMaterial;
+  private trainBodyMat!: THREE.MeshStandardMaterial;
+  private cyanGlowMat!: THREE.MeshBasicMaterial;
+  private redLaserMat!: THREE.MeshBasicMaterial;
+  private yellowBeaconMat!: THREE.MeshBasicMaterial;
+  private headlightMat!: THREE.MeshBasicMaterial;
+
   constructor() {
     this.group = new THREE.Group();
+    this.initMaterials();
+  }
+
+  private initMaterials() {
+    const chevronTex = ProceduralTextures.getHazardChevronTexture();
+
+    this.hazardMat = new THREE.MeshStandardMaterial({
+      map: chevronTex,
+      roughness: 0.4,
+      metalness: 0.3,
+    });
+
+    this.industrialMetalMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.35,
+      metalness: 0.8,
+    });
+
+    this.trainBodyMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.2,
+      metalness: 0.85,
+    });
+
+    this.cyanGlowMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+    this.redLaserMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+    this.yellowBeaconMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+    this.headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   }
 
   public getObstacle(type: ObstacleType, lane: number, z: number, isMoving: boolean = false): ObstacleInstance {
-    // Check for inactive obstacle in pool
     let inst = this.obstacles.find((o) => !o.active && o.type === type);
     if (!inst) {
       const mesh = this.createObstacleMesh(type);
@@ -38,7 +75,7 @@ export class ObstaclePool {
         active: true,
         box: new THREE.Box3(),
         isMoving,
-        moveSpeed: isMoving ? 8 : 0,
+        moveSpeed: isMoving ? 10 : 0,
         requiresSlide: type === 'HIGH_BARRIER',
         requiresJump: type === 'HURDLE',
         canClimb: type === 'RAMP' || type === 'TRAIN',
@@ -51,7 +88,7 @@ export class ObstaclePool {
     inst.lane = lane;
     inst.z = z;
     inst.isMoving = isMoving;
-    inst.moveSpeed = isMoving ? 10 : 0;
+    inst.moveSpeed = isMoving ? 12 : 0;
     inst.mesh.visible = true;
     inst.mesh.position.set(GAME_CONSTANTS.LANES[lane + 1], 0, z);
     inst.box.setFromObject(inst.mesh);
@@ -77,8 +114,8 @@ export class ObstaclePool {
       // Update bounding box
       inst.box.setFromObject(inst.mesh);
 
-      // Despawn once well behind player
-      if (inst.z > playerZ + 20) {
+      // Despawn once behind player
+      if (inst.z > playerZ + 25) {
         this.recycle(inst);
       }
     }
@@ -94,116 +131,160 @@ export class ObstaclePool {
     const group = new THREE.Group();
 
     if (type === 'HURDLE') {
-      // Low jump barrier with hazard stripes
-      const frameGeo = new THREE.BoxGeometry(2.3, 0.9, 0.35);
-      const frameMat = new THREE.MeshStandardMaterial({
-        color: 0xf59e0b,
-        metalness: 0.6,
-        roughness: 0.4,
-      });
-      const hurdle = new THREE.Mesh(frameGeo, frameMat);
-      hurdle.position.y = 0.45;
-      hurdle.castShadow = true;
-      group.add(hurdle);
+      // 1. High-Tech Cyber Road Barrier
+      const mainBarGeo = new THREE.BoxGeometry(2.35, 0.55, 0.22);
+      const mainBar = new THREE.Mesh(mainBarGeo, this.hazardMat);
+      mainBar.position.y = 0.5;
+      mainBar.castShadow = true;
+      group.add(mainBar);
 
-      // Warning glow bar
-      const glowGeo = new THREE.BoxGeometry(2.1, 0.15, 0.38);
-      const glowMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
-      const glow = new THREE.Mesh(glowGeo, glowMat);
-      glow.position.y = 0.65;
-      group.add(glow);
+      // Upper warning rail with flashing LED beacons
+      const topRailGeo = new THREE.BoxGeometry(2.45, 0.12, 0.26);
+      const topRail = new THREE.Mesh(topRailGeo, this.industrialMetalMat);
+      topRail.position.y = 0.82;
+      group.add(topRail);
 
-      // Stands
+      // Left & right amber beacon lights
       [-0.95, 0.95].forEach((x) => {
-        const standGeo = new THREE.CylinderGeometry(0.08, 0.12, 0.9, 8);
-        const standMat = new THREE.MeshStandardMaterial({ color: 0x27272a });
-        const stand = new THREE.Mesh(standGeo, standMat);
-        stand.position.set(x, 0.45, 0);
-        group.add(stand);
+        const beaconGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.14, 10);
+        const beacon = new THREE.Mesh(beaconGeo, this.yellowBeaconMat);
+        beacon.position.set(x, 0.94, 0);
+        group.add(beacon);
       });
-    } else if (type === 'HIGH_BARRIER') {
-      // High laser archway / barrier that player must slide under
-      const crossbarGeo = new THREE.BoxGeometry(2.5, 0.8, 0.4);
-      const crossbarMat = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.8, roughness: 0.2 });
-      const bar = new THREE.Mesh(crossbarGeo, crossbarMat);
-      bar.position.y = 2.4; // High clearance
-      bar.castShadow = true;
-      group.add(bar);
 
-      // Glowing laser line under bar
-      const laserGeo = new THREE.BoxGeometry(2.3, 0.08, 0.08);
-      const laserMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
-      const laser = new THREE.Mesh(laserGeo, laserMat);
-      laser.position.y = 1.95;
+      // Lower Laser Tripwire
+      const laserGeo = new THREE.BoxGeometry(2.2, 0.06, 0.06);
+      const laser = new THREE.Mesh(laserGeo, this.cyanGlowMat);
+      laser.position.y = 0.15;
       group.add(laser);
 
-      // Side pillars
-      [-1.15, 1.15].forEach((x) => {
-        const pillarGeo = new THREE.CylinderGeometry(0.12, 0.16, 2.8, 8);
-        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 });
-        const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-        pillar.position.set(x, 1.4, 0);
-        group.add(pillar);
+      // Heavy Industrial Base Pylons
+      [-0.95, 0.95].forEach((x) => {
+        const pylonGeo = new THREE.BoxGeometry(0.24, 0.8, 0.35);
+        const pylon = new THREE.Mesh(pylonGeo, this.industrialMetalMat);
+        pylon.position.set(x, 0.4, 0);
+        pylon.castShadow = true;
+        group.add(pylon);
+      });
+    } else if (type === 'HIGH_BARRIER') {
+      // 2. High-Voltage Laser Archway (Must Slide Under)
+      // Overhead heavy frame
+      const frameGeo = new THREE.BoxGeometry(2.5, 0.7, 0.45);
+      const frame = new THREE.Mesh(frameGeo, this.industrialMetalMat);
+      frame.position.y = 2.45;
+      frame.castShadow = true;
+      group.add(frame);
+
+      // Digital Warning Sign on Frame
+      const signGeo = new THREE.BoxGeometry(2.2, 0.35, 0.48);
+      const signMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+      const sign = new THREE.Mesh(signGeo, signMat);
+      sign.position.y = 2.45;
+      group.add(sign);
+
+      // Crackling Overhead Laser Barrier (Top hazard section)
+      const laserGridGeo = new THREE.BoxGeometry(2.3, 0.5, 0.08);
+      const laserGrid = new THREE.Mesh(laserGridGeo, this.redLaserMat);
+      laserGrid.position.y = 1.95;
+      group.add(laserGrid);
+
+      // Side Support Towers
+      [-1.18, 1.18].forEach((x) => {
+        const towerGeo = new THREE.BoxGeometry(0.28, 2.8, 0.45);
+        const tower = new THREE.Mesh(towerGeo, this.industrialMetalMat);
+        tower.position.set(x, 1.4, 0);
+        tower.castShadow = true;
+        group.add(tower);
+
+        // Tower LED neon strip
+        const ledGeo = new THREE.BoxGeometry(0.06, 2.6, 0.48);
+        const led = new THREE.Mesh(ledGeo, this.cyanGlowMat);
+        led.position.set(x + (x > 0 ? -0.12 : 0.12), 1.4, 0);
+        group.add(led);
       });
     } else if (type === 'TRAIN') {
-      // Futuristic cyber subway monorail car
-      const trainGeo = new THREE.BoxGeometry(2.4, 3.2, 14);
-      const trainMat = new THREE.MeshStandardMaterial({
-        color: 0x334155,
-        roughness: 0.3,
-        metalness: 0.7,
-      });
-      const trainBody = new THREE.Mesh(trainGeo, trainMat);
-      trainBody.position.y = 1.6;
+      // 3. Futuristic Maglev Bullet Train
+      const trainLen = 14.5;
+      const trainWidth = 2.4;
+      const trainHeight = 3.3;
+
+      // Aerodynamic Train Body
+      const bodyGeo = new THREE.BoxGeometry(trainWidth, trainHeight, trainLen);
+      const trainBody = new THREE.Mesh(bodyGeo, this.trainBodyMat);
+      trainBody.position.y = trainHeight / 2;
       trainBody.castShadow = true;
+      trainBody.receiveShadow = true;
       group.add(trainBody);
 
-      // Train roof platform (where player can run!)
-      const roofGeo = new THREE.BoxGeometry(2.35, 0.15, 13.8);
-      const roofMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
-      const roof = new THREE.Mesh(roofGeo, roofMat);
-      roof.position.y = 3.25;
-      group.add(roof);
+      // Sloped Aerodynamic Nose on front (+Z facing oncoming player)
+      const noseGeo = new THREE.ConeGeometry(1.6, 2.2, 4);
+      noseGeo.rotateX(Math.PI / 2);
+      noseGeo.rotateZ(Math.PI / 4);
+      const nose = new THREE.Mesh(noseGeo, this.trainBodyMat);
+      nose.position.set(0, 1.4, trainLen / 2 + 0.6);
+      group.add(nose);
 
-      // Train front windshield & headlights
-      const windshieldGeo = new THREE.BoxGeometry(2.1, 0.9, 0.3);
-      const windshieldMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-      const windshield = new THREE.Mesh(windshieldGeo, windshieldMat);
-      windshield.position.set(0, 2.2, 7.05);
-      group.add(windshield);
+      // High-Intensity Dual LED Headlights
+      [-0.7, 0.7].forEach((x) => {
+        const lightGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.1, 16);
+        lightGeo.rotateX(Math.PI / 2);
+        const light = new THREE.Mesh(lightGeo, this.headlightMat);
+        light.position.set(x, 1.2, trainLen / 2 + 1.2);
+        group.add(light);
+      });
 
-      // Glowing neon side trim lines
-      [-1.22, 1.22].forEach((x) => {
-        const stripeGeo = new THREE.BoxGeometry(0.06, 0.15, 13.5);
-        const stripeMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 });
-        const stripe = new THREE.Mesh(stripeGeo, stripeMat);
-        stripe.position.set(x, 1.5, 0);
+      // Illuminated Passenger Window Strip (Both sides)
+      [-trainWidth / 2 - 0.02, trainWidth / 2 + 0.02].forEach((x) => {
+        const winGeo = new THREE.BoxGeometry(0.04, 0.55, trainLen - 2);
+        const win = new THREE.Mesh(winGeo, this.cyanGlowMat);
+        win.position.set(x, 2.1, 0);
+        group.add(win);
+      });
+
+      // Glowing Neon Lower Racing Stripe
+      [-trainWidth / 2 - 0.02, trainWidth / 2 + 0.02].forEach((x) => {
+        const stripeGeo = new THREE.BoxGeometry(0.04, 0.12, trainLen);
+        const stripe = new THREE.Mesh(stripeGeo, new THREE.MeshBasicMaterial({ color: 0xec4899 }));
+        stripe.position.set(x, 0.7, 0);
         group.add(stripe);
       });
-    } else if (type === 'RAMP') {
-      // Incline ramp to run up onto trains
-      const rampGeo = new THREE.BoxGeometry(2.2, 0.2, 6.5);
-      const rampMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5 });
-      const ramp = new THREE.Mesh(rampGeo, rampMat);
-      ramp.position.set(0, 1.5, 0);
-      ramp.rotation.x = 0.45; // Incline
-      ramp.castShadow = true;
-      group.add(ramp);
-    } else {
-      // PILLAR: Solid high-tech blocker
-      const pGeo = new THREE.BoxGeometry(1.8, 4.5, 1.4);
-      const pMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4, metalness: 0.8 });
-      const pillar = new THREE.Mesh(pGeo, pMat);
-      pillar.position.y = 2.25;
-      pillar.castShadow = true;
-      group.add(pillar);
 
-      // Neon warning cross
-      const crossGeo = new THREE.BoxGeometry(1.4, 0.25, 1.45);
-      const crossMat = new THREE.MeshBasicMaterial({ color: 0xe11d48 });
-      const cross = new THREE.Mesh(crossGeo, crossMat);
-      cross.position.y = 2.25;
-      group.add(cross);
+      // Rooftop Catwalk Platform (Where player runs!)
+      const catwalkGeo = new THREE.BoxGeometry(trainWidth - 0.2, 0.12, trainLen - 0.2);
+      const catwalk = new THREE.Mesh(catwalkGeo, this.hazardMat);
+      catwalk.position.y = trainHeight + 0.06;
+      group.add(catwalk);
+    } else if (type === 'RAMP') {
+      // 4. Incline Ramp with Directional Chevrons
+      const rampGeo = new THREE.BoxGeometry(2.3, 0.2, 6.8);
+      const ramp = new THREE.Mesh(rampGeo, this.hazardMat);
+      ramp.position.set(0, 1.6, 0);
+      ramp.rotation.x = 0.44; // Perfect slope
+      ramp.castShadow = true;
+      ramp.receiveShadow = true;
+      group.add(ramp);
+
+      // Glowing Cyan Side Rail Guides
+      [-1.15, 1.15].forEach((x) => {
+        const railGeo = new THREE.BoxGeometry(0.08, 0.2, 6.8);
+        const rail = new THREE.Mesh(railGeo, this.cyanGlowMat);
+        rail.position.set(x, 1.7, 0);
+        rail.rotation.x = 0.44;
+        group.add(rail);
+      });
+    } else {
+      // 5. Heavy Security Pylon (PILLAR)
+      const pylonGeo = new THREE.CylinderGeometry(0.9, 1.1, 4.6, 8);
+      const pylon = new THREE.Mesh(pylonGeo, this.industrialMetalMat);
+      pylon.position.y = 2.3;
+      pylon.castShadow = true;
+      group.add(pylon);
+
+      // Pulsing Red Warning Band
+      const bandGeo = new THREE.CylinderGeometry(0.92, 0.92, 0.4, 8);
+      const band = new THREE.Mesh(bandGeo, this.redLaserMat);
+      band.position.y = 2.5;
+      group.add(band);
     }
 
     return group;

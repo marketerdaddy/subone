@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RotateCcw, Home, Sparkles, Trophy, Gem, ShieldAlert } from 'lucide-react';
 import { GameButton } from '../common/GameButton';
 import { PlayerProfile } from '../../types/game';
@@ -66,6 +66,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
       }}
     >
       <div
+        className="modal-card"
         style={{
           width: '100%',
           maxWidth: '420px',

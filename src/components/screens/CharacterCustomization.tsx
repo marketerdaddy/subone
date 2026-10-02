@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, RotateCw, ZoomIn, Play, Sparkles, Check, Palette, Eye } from 'lucide-react';
+import { ArrowLeft, RotateCw, ZoomIn, Check } from 'lucide-react';
 import { Character } from '../../types/game';
 import { GameButton } from '../common/GameButton';
 

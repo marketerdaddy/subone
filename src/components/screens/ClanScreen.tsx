@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Shield, Swords, Users, Award, Trophy, ChevronRight, Lock, Skull, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Shield, Swords, Users, Trophy, Lock, Skull, CheckCircle2 } from 'lucide-react';
 import { GameButton } from '../common/GameButton';
 import { CurrencyDisplay } from '../common/CurrencyDisplay';
-import confetti from 'canvas-confetti';
 
 interface ClanScreenProps {
   coins: number;

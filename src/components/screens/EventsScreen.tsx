@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, Award, Shield, Sparkles, CheckCircle2, ChevronRight, Lock } from 'lucide-react';
+import { ArrowLeft, Clock, Sparkles, CheckCircle2, ChevronRight, Lock } from 'lucide-react';
 import { GameButton } from '../common/GameButton';
 import { CurrencyDisplay } from '../common/CurrencyDisplay';
 import confetti from 'canvas-confetti';
@@ -20,7 +20,7 @@ export const EventsScreen: React.FC<EventsScreenProps> = ({
   onClaimReward,
 }) => {
   const [timeLeft, setTimeLeft] = useState({ days: 2, hours: 14, minutes: 32, seconds: 45 });
-  const [currentEventLevel, setCurrentEventLevel] = useState(3);
+  const [currentEventLevel] = useState(3);
   const [claimedLevels, setClaimedLevels] = useState<number[]>([1, 2]);
 
   useEffect(() => {

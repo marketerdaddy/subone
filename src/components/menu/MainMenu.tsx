@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { Settings, Gift, Trophy, Crown, Play, Home, ListTodo, Users, ShoppingBag, User, Infinity as InfinityIcon } from 'lucide-react';
+import {
+  Settings,
+  Gift,
+  Trophy,
+  Crown,
+  Play,
+  Home,
+  ListTodo,
+  Users,
+  ShoppingBag,
+  User,
+  Zap,
+  Shield,
+  Infinity as InfinityIcon,
+} from 'lucide-react';
 import { PlayerProfile } from '../../types/game';
 import { CHARACTERS, generateLevelInfo } from '../../config/gameConfig';
 import { CurrencyDisplay } from '../common/CurrencyDisplay';
@@ -32,7 +46,6 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   onOpenSettings,
   onOpenEvents,
   onOpenClans,
-  onOpenCustomization,
 }) => {
   const [activeNav, setActiveNav] = useState<'home' | 'missions' | 'characters' | 'shop' | 'profile'>('home');
   const [isEndlessMode, setIsEndlessMode] = useState<boolean>(false);
@@ -48,141 +61,213 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     else if (nav === 'profile') onOpenProfile();
   };
 
+  // Rarity color mapping
+  const rarityColor: Record<string, string> = {
+    legendary: '#f59e0b',
+    epic: '#a855f7',
+    rare: '#38bdf8',
+    uncommon: '#34d399',
+    common: '#94a3b8',
+  };
+  const charAccent = rarityColor[selectedChar.rarity] || '#38bdf8';
+
   return (
     <div
+      id="main-menu-root"
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 40,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
-        backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(10, 13, 30, 0.4) 0%, rgba(5, 7, 15, 0.85) 75%, #05070f 100%), url("/images/main_menu_bg.jpg")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
+        // Transparent overlay — 3D canvas shows through completely
+        background:
+          'linear-gradient(to bottom, rgba(4,6,15,0.92) 0%, rgba(4,6,15,0.08) 15%, rgba(4,6,15,0.05) 70%, rgba(4,6,15,0.92) 85%, rgba(4,6,15,0.98) 100%)',
         overflow: 'hidden',
       }}
-      className="safe-top safe-bottom"
+      className="safe-top safe-bottom menu-root"
     >
-      {/* 1. TOP HEADER BAR */}
+      {/* ====================================================
+          1. TOP HEADER — Sleek minimal glass bar
+      ===================================================== */}
       <div
+        id="menu-top-header"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '16px 20px',
-          background: 'rgba(15, 23, 42, 0.75)',
-          backdropFilter: 'blur(14px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '10px 16px',
+          background: 'rgba(4, 6, 18, 0.85)',
+          WebkitBackdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(56, 189, 248, 0.12)',
+          flexShrink: 0,
         }}
       >
-        <div
+        {/* Left: Player Avatar + Level + Name */}
+        <button
+          id="menu-profile-btn"
           onClick={onOpenProfile}
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
+            background: 'none',
+            border: 'none',
             cursor: 'pointer',
+            padding: 0,
           }}
         >
-          <img
-            src={selectedChar.avatarUrl || profile.avatar}
-            alt={profile.username}
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: '12px',
-              border: '2px solid #38bdf8',
-              objectFit: 'cover',
-              boxShadow: '0 0 12px rgba(56, 189, 248, 0.4)',
-            }}
-          />
-          <div>
-            <div style={{ fontSize: '15px', fontWeight: 800, color: '#f8fafc' }}>
-              {profile.username}
-            </div>
-            <div style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 700 }}>
-              Lv. {profile.level} • {selectedChar.name}
+          {/* Avatar with level ring */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <img
+              src={selectedChar.avatarUrl || profile.avatar}
+              alt={profile.username}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '10px',
+                border: `2px solid ${charAccent}`,
+                objectFit: 'cover',
+                display: 'block',
+                boxShadow: `0 0 10px ${charAccent}55`,
+              }}
+            />
+            {/* Level badge */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: -4,
+                right: -4,
+                background: `linear-gradient(135deg, ${charAccent}, ${charAccent}aa)`,
+                borderRadius: '5px',
+                padding: '1px 5px',
+                fontSize: '9px',
+                fontWeight: 900,
+                color: '#050811',
+                lineHeight: '1',
+                letterSpacing: '0.3px',
+                boxShadow: `0 2px 6px ${charAccent}66`,
+              }}
+            >
+              {profile.level}
             </div>
           </div>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ textAlign: 'left' }}>
+            <div
+              style={{
+                fontSize: '14px',
+                fontWeight: 800,
+                color: '#f1f5f9',
+                lineHeight: '1.2',
+                letterSpacing: '0.2px',
+              }}
+            >
+              {profile.username}
+            </div>
+            <div
+              style={{
+                fontSize: '10px',
+                color: charAccent,
+                fontWeight: 700,
+                letterSpacing: '0.4px',
+                textTransform: 'uppercase',
+              }}
+            >
+              {selectedChar.title || selectedChar.name}
+            </div>
+          </div>
+        </button>
+
+        {/* Right: Currencies + Settings */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <CurrencyDisplay coins={profile.coins} gems={profile.gems} onAddCoins={onOpenShop} onAddGems={onOpenShop} />
           <button
+            id="menu-settings-btn"
             onClick={onOpenSettings}
             style={{
-              background: 'rgba(30, 41, 59, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '12px',
-              width: 36,
-              height: 36,
+              background: 'rgba(30, 41, 59, 0.6)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '10px',
+              width: 34,
+              height: 34,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#94a3b8',
+              color: '#64748b',
               cursor: 'pointer',
+              flexShrink: 0,
             }}
           >
-            <Settings size={18} />
+            <Settings size={16} />
           </button>
         </div>
       </div>
 
-      {/* 2. CENTER HERO AREA */}
+      {/* ====================================================
+          2. CENTER HERO — Transparent pass-through zone
+          Left/Right floating icon pills only
+      ===================================================== */}
       <div
+        id="menu-center-hero"
         style={{
           flex: 1,
+          position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px 20px',
-          position: 'relative',
+          justifyContent: 'flex-end',
+          pointerEvents: 'none', // let 3D canvas receive events in center
         }}
       >
-        {/* Left Floating Action Badges: Events & Clans */}
+        {/* LEFT FLOATING PILLS */}
         <div
           style={{
             position: 'absolute',
-            left: 20,
-            top: '20%',
+            left: 12,
+            top: '18%',
             display: 'flex',
             flexDirection: 'column',
-            gap: '14px',
+            gap: '10px',
             zIndex: 10,
+            pointerEvents: 'all',
           }}
         >
           {onOpenEvents && (
             <button
+              id="menu-events-btn"
               onClick={onOpenEvents}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                background: 'rgba(15, 23, 42, 0.8)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(236, 72, 153, 0.5)',
-                borderRadius: '16px',
-                padding: '10px',
+                gap: '4px',
+                background: 'rgba(8, 12, 28, 0.82)',
+                WebkitBackdropFilter: 'blur(12px)',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(236, 72, 153, 0.4)',
+                borderRadius: '14px',
+                padding: '10px 8px',
                 color: '#ec4899',
                 cursor: 'pointer',
                 position: 'relative',
-                boxShadow: '0 4px 16px rgba(236, 72, 153, 0.3)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(236,72,153,0.18)',
+                minWidth: 52,
               }}
             >
-              <span style={{ fontSize: '20px' }}>⚡</span>
-              <span style={{ fontSize: '10px', fontWeight: 800, marginTop: '4px', color: '#f8fafc' }}>
-                Events
+              <Zap size={20} />
+              <span style={{ fontSize: '9px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '0.4px' }}>
+                EVENTS
               </span>
+              {/* Pulse dot */}
               <div
                 style={{
                   position: 'absolute',
-                  top: 4,
-                  right: 4,
-                  width: 8,
-                  height: 8,
+                  top: 5,
+                  right: 5,
+                  width: 7,
+                  height: 7,
                   borderRadius: '50%',
                   background: '#ec4899',
                   boxShadow: '0 0 6px #ec4899',
@@ -193,69 +278,78 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
           {onOpenClans && (
             <button
+              id="menu-clans-btn"
               onClick={onOpenClans}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                background: 'rgba(15, 23, 42, 0.8)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(56, 189, 248, 0.5)',
-                borderRadius: '16px',
-                padding: '10px',
+                gap: '4px',
+                background: 'rgba(8, 12, 28, 0.82)',
+                WebkitBackdropFilter: 'blur(12px)',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                borderRadius: '14px',
+                padding: '10px 8px',
                 color: '#38bdf8',
                 cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(56, 189, 248, 0.3)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+                minWidth: 52,
               }}
             >
-              <span style={{ fontSize: '20px' }}>🛡️</span>
-              <span style={{ fontSize: '10px', fontWeight: 800, marginTop: '4px', color: '#f8fafc' }}>
-                Clans
+              <Shield size={20} />
+              <span style={{ fontSize: '9px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '0.4px' }}>
+                CLANS
               </span>
             </button>
           )}
         </div>
 
-        {/* Right Floating Action Badges: Daily, Badges, Ranks */}
+        {/* RIGHT FLOATING PILLS */}
         <div
           style={{
             position: 'absolute',
-            right: 20,
-            top: '20%',
+            right: 12,
+            top: '18%',
             display: 'flex',
             flexDirection: 'column',
-            gap: '14px',
+            gap: '10px',
             zIndex: 10,
+            pointerEvents: 'all',
           }}
         >
           <button
+            id="menu-daily-btn"
             onClick={onOpenDailyRewards}
             style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              background: 'rgba(15, 23, 42, 0.75)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(250, 204, 21, 0.3)',
-              borderRadius: '16px',
-              padding: '10px',
+              gap: '4px',
+              background: 'rgba(8, 12, 28, 0.82)',
+              WebkitBackdropFilter: 'blur(12px)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(250, 204, 21, 0.35)',
+              borderRadius: '14px',
+              padding: '10px 8px',
               color: '#facc15',
               cursor: 'pointer',
               position: 'relative',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+              minWidth: 52,
             }}
           >
-            <Gift size={24} />
-            <span style={{ fontSize: '10px', fontWeight: 800, marginTop: '4px', color: '#f8fafc' }}>
-              Daily
+            <Gift size={20} />
+            <span style={{ fontSize: '9px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '0.4px' }}>
+              DAILY
             </span>
             <div
               style={{
                 position: 'absolute',
-                top: 4,
-                right: 4,
-                width: 8,
-                height: 8,
+                top: 5,
+                right: 5,
+                width: 7,
+                height: 7,
                 borderRadius: '50%',
                 background: '#ef4444',
                 boxShadow: '0 0 6px #ef4444',
@@ -264,186 +358,212 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           </button>
 
           <button
+            id="menu-badges-btn"
             onClick={onOpenProfile}
             style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              background: 'rgba(15, 23, 42, 0.75)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              borderRadius: '16px',
-              padding: '10px',
+              gap: '4px',
+              background: 'rgba(8, 12, 28, 0.82)',
+              WebkitBackdropFilter: 'blur(12px)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(56, 189, 248, 0.28)',
+              borderRadius: '14px',
+              padding: '10px 8px',
               color: '#38bdf8',
               cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+              minWidth: 52,
             }}
           >
-            <Trophy size={24} />
-            <span style={{ fontSize: '10px', fontWeight: 800, marginTop: '4px', color: '#f8fafc' }}>
-              Badges
+            <Trophy size={20} />
+            <span style={{ fontSize: '9px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '0.4px' }}>
+              BADGES
             </span>
           </button>
 
           <button
+            id="menu-ranks-btn"
             onClick={onOpenLeaderboard}
             style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              background: 'rgba(15, 23, 42, 0.75)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(192, 132, 252, 0.3)',
-              borderRadius: '16px',
-              padding: '10px',
+              gap: '4px',
+              background: 'rgba(8, 12, 28, 0.82)',
+              WebkitBackdropFilter: 'blur(12px)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(192, 132, 252, 0.28)',
+              borderRadius: '14px',
+              padding: '10px 8px',
               color: '#c084fc',
               cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+              minWidth: 52,
             }}
           >
-            <Crown size={24} />
-            <span style={{ fontSize: '10px', fontWeight: 800, marginTop: '4px', color: '#f8fafc' }}>
-              Ranks
+            <Crown size={20} />
+            <span style={{ fontSize: '9px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '0.4px' }}>
+              RANKS
             </span>
           </button>
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <h1
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(26px, 6vw, 36px)',
-              fontWeight: 900,
-              letterSpacing: '1px',
-              color: '#ffffff',
-              textShadow: '0 0 25px rgba(56, 189, 248, 0.6)',
-            }}
-          >
-            YOUR NEXT RUN AWAITS
-          </h1>
-          <p style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '4px', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
-            Reach higher. Go further. Be legendary.
-          </p>
-        </div>
-
-        {/* Center Character Showcase on Pedestal */}
+        {/* CENTER BOTTOM — Holographic character name badge + thin separator */}
         <div
+          id="menu-character-badge"
           onClick={onOpenCharacters}
-          style={{
-            width: '210px',
-            height: '250px',
-            borderRadius: '24px',
-            background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.85) 100%)',
-            border: '2px solid rgba(56, 189, 248, 0.4)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            boxShadow: '0 15px 45px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.25)',
-            position: 'relative',
-            cursor: 'pointer',
-            marginBottom: '16px',
-            overflow: 'hidden',
-          }}
-        >
-          <img
-            src={selectedChar.avatarUrl || '/images/char_zayn.jpg'}
-            alt={selectedChar.name}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center top',
-              transform: 'scale(1.08)',
-            }}
-          />
-
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: '45px',
-              background: 'linear-gradient(180deg, transparent 0%, rgba(7, 11, 20, 0.95) 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '11px',
-                color: '#38bdf8',
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-              }}
-            >
-              {selectedChar.name} • Tap to Inspect
-            </div>
-          </div>
-        </div>
-
-        <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            marginBottom: '16px',
-            background: 'rgba(15, 23, 42, 0.7)',
-            padding: '4px 12px',
+            padding: '6px 16px',
+            background: 'rgba(4, 8, 20, 0.80)',
+            WebkitBackdropFilter: 'blur(14px)',
+            backdropFilter: 'blur(14px)',
+            border: `1px solid ${charAccent}55`,
             borderRadius: '9999px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            cursor: 'pointer',
+            boxShadow: `0 4px 24px rgba(0,0,0,0.7), 0 0 14px ${charAccent}22`,
+            marginBottom: '14px',
+            pointerEvents: 'all',
+            transition: 'border-color 0.25s ease',
+          }}
+        >
+          {/* Rarity pulse dot */}
+          <div
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: charAccent,
+              boxShadow: `0 0 8px ${charAccent}`,
+              flexShrink: 0,
+            }}
+          />
+          <span
+            style={{
+              fontSize: '10px',
+              fontWeight: 900,
+              color: '#f1f5f9',
+              letterSpacing: '1.4px',
+              textTransform: 'uppercase',
+            }}
+          >
+            {selectedChar.name}
+          </span>
+          <span
+            style={{
+              fontSize: '9px',
+              fontWeight: 700,
+              color: charAccent,
+              letterSpacing: '0.6px',
+              textTransform: 'uppercase',
+              opacity: 0.9,
+            }}
+          >
+            · {selectedChar.rarity}
+          </span>
+        </div>
+      </div>
+
+      {/* ====================================================
+          3. CTA PANEL — Anchored above bottom nav
+          Mode switcher pill + PLAY CTA button
+      ===================================================== */}
+      <div
+        id="menu-cta-panel"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 20px 14px',
+          background: 'linear-gradient(to top, rgba(4,6,15,0.98) 0%, rgba(4,6,15,0.82) 70%, transparent 100%)',
+          flexShrink: 0,
+        }}
+      >
+        {/* Mode Switcher: Level select vs Endless */}
+        <div
+          id="menu-mode-switcher"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            background: 'rgba(8, 14, 32, 0.90)',
+            WebkitBackdropFilter: 'blur(12px)',
+            backdropFilter: 'blur(12px)',
+            padding: '4px',
+            borderRadius: '9999px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
           }}
         >
           <button
+            id="menu-mode-level-btn"
             onClick={() => setIsEndlessMode(false)}
             style={{
-              background: !isEndlessMode ? 'rgba(56, 189, 248, 0.25)' : 'none',
-              border: !isEndlessMode ? '1px solid #38bdf8' : 'none',
+              background: !isEndlessMode
+                ? 'linear-gradient(135deg, rgba(56,189,248,0.22), rgba(14,165,233,0.16))'
+                : 'transparent',
+              border: !isEndlessMode ? '1px solid rgba(56,189,248,0.55)' : '1px solid transparent',
               borderRadius: '9999px',
-              padding: '4px 12px',
-              color: !isEndlessMode ? '#38bdf8' : '#94a3b8',
-              fontSize: '12px',
-              fontWeight: 800,
+              padding: '5px 14px',
+              color: !isEndlessMode ? '#38bdf8' : '#64748b',
+              fontSize: '10px',
+              fontWeight: 900,
+              letterSpacing: '0.5px',
               cursor: 'pointer',
+              transition: 'all 0.18s ease',
+              whiteSpace: 'nowrap',
             }}
           >
-            Level {profile.level}: {levelInfo.biome.replace('_', ' ')}
+            LV.{profile.level} · {levelInfo.biome.replace(/_/g, ' ')}
           </button>
+
           <button
+            id="menu-mode-endless-btn"
             onClick={() => setIsEndlessMode(true)}
             style={{
-              background: isEndlessMode ? 'rgba(250, 204, 21, 0.25)' : 'none',
-              border: isEndlessMode ? '1px solid #facc15' : 'none',
+              background: isEndlessMode
+                ? 'linear-gradient(135deg, rgba(250,204,21,0.22), rgba(234,179,8,0.16))'
+                : 'transparent',
+              border: isEndlessMode ? '1px solid rgba(250,204,21,0.55)' : '1px solid transparent',
               borderRadius: '9999px',
-              padding: '4px 12px',
-              color: isEndlessMode ? '#facc15' : '#94a3b8',
-              fontSize: '12px',
-              fontWeight: 800,
+              padding: '5px 14px',
+              color: isEndlessMode ? '#facc15' : '#64748b',
+              fontSize: '10px',
+              fontWeight: 900,
               display: 'flex',
               alignItems: 'center',
-              gap: '4px',
+              gap: '5px',
+              letterSpacing: '0.5px',
               cursor: 'pointer',
+              transition: 'all 0.18s ease',
+              whiteSpace: 'nowrap',
             }}
           >
-            <InfinityIcon size={14} />
-            <span>Endless Run</span>
+            <InfinityIcon size={12} />
+            ENDLESS
           </button>
         </div>
 
-        <div style={{ width: '100%', maxWidth: '320px' }}>
+        {/* PLAY Button — Premium gold with spring glow */}
+        <div style={{ width: '100%', maxWidth: 340 }}>
           <GameButton
             fullWidth
             size="xl"
             variant="gold"
             onClick={() => onPlay(profile.level, isEndlessMode)}
-            icon={<Play size={24} fill="#422006" />}
+            icon={<Play size={22} fill="#422006" />}
             style={{
-              height: '62px',
-              fontSize: '22px',
-              boxShadow: '0 6px 30px rgba(245, 158, 11, 0.55), inset 0 2px 2px rgba(255, 255, 255, 0.6)',
+              height: '60px',
+              fontSize: '20px',
+              fontWeight: 900,
+              letterSpacing: '2px',
+              boxShadow:
+                '0 6px 32px rgba(245,158,11,0.55), 0 2px 8px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.55)',
             }}
           >
             PLAY
@@ -451,45 +571,75 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         </div>
       </div>
 
-      {/* 3. BOTTOM NAVIGATION BAR */}
+      {/* ====================================================
+          4. BOTTOM NAV BAR — Compact high-contrast tabs
+      ===================================================== */}
       <div
+        id="menu-bottom-nav"
         style={{
           display: 'flex',
           justifyContent: 'space-around',
           alignItems: 'center',
-          padding: '12px 10px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          backdropFilter: 'blur(16px)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '10px 8px',
+          background: 'rgba(4, 6, 15, 0.98)',
+          WebkitBackdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(20px)',
+          borderTop: '1px solid rgba(56, 189, 248, 0.10)',
+          flexShrink: 0,
         }}
       >
         {[
-          { id: 'home', label: 'Home', icon: <Home size={20} /> },
-          { id: 'missions', label: 'Missions', icon: <ListTodo size={20} /> },
-          { id: 'characters', label: 'Characters', icon: <Users size={20} /> },
-          { id: 'shop', label: 'Shop', icon: <ShoppingBag size={20} /> },
-          { id: 'profile', label: 'Profile', icon: <User size={20} /> },
+          { id: 'home' as const, label: 'Home', icon: <Home size={20} /> },
+          { id: 'missions' as const, label: 'Missions', icon: <ListTodo size={20} /> },
+          { id: 'characters' as const, label: 'Runner', icon: <Users size={20} /> },
+          { id: 'shop' as const, label: 'Shop', icon: <ShoppingBag size={20} /> },
+          { id: 'profile' as const, label: 'Profile', icon: <User size={20} /> },
         ].map((tab) => {
           const isActive = activeNav === tab.id;
           return (
             <button
               key={tab.id}
-              onClick={() => handleNavClick(tab.id as typeof activeNav)}
+              id={`menu-nav-${tab.id}-btn`}
+              onClick={() => handleNavClick(tab.id)}
               style={{
                 background: 'none',
                 border: 'none',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '4px',
-                color: isActive ? '#facc15' : '#94a3b8',
+                gap: '3px',
+                color: isActive ? '#facc15' : '#475569',
                 cursor: 'pointer',
-                padding: '4px 12px',
-                transition: 'color 0.2s ease',
+                padding: '4px 10px',
+                borderRadius: '10px',
+                transition: 'color 0.18s ease',
+                position: 'relative',
               }}
             >
+              {/* Active indicator line */}
+              {isActive && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: -1,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: 28,
+                    height: 2,
+                    borderRadius: '1px',
+                    background: '#facc15',
+                    boxShadow: '0 0 8px #facc15',
+                  }}
+                />
+              )}
               {tab.icon}
-              <span style={{ fontSize: '11px', fontWeight: isActive ? 800 : 600 }}>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: isActive ? 800 : 600,
+                  letterSpacing: isActive ? '0.5px' : '0',
+                }}
+              >
                 {tab.label}
               </span>
             </button>

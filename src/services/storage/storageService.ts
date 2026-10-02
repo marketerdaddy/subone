@@ -1,5 +1,4 @@
 import { PlayerProfile, GameSettings } from '../../types/game';
-import { CHARACTERS } from '../../config/gameConfig';
 
 const STORAGE_KEY = 'nexus_run_player_profile_v1';
 

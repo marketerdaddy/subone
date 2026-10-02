@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Crown } from 'lucide-react';
 import { LeaderboardEntry, PlayerProfile } from '../../types/game';
 import { gameApi } from '../../services/api/gameApi';
@@ -15,7 +15,6 @@ export const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ profile, o
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
     gameApi.getLeaderboard(activeTab).then((data) => {
       if (isMounted) {
         setEntries(data);
@@ -97,7 +96,10 @@ export const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ profile, o
         {(['global', 'friends', 'weekly', 'monthly'] as const).map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => {
+              setLoading(true);
+              setActiveTab(tab);
+            }}
             style={{
               flex: 1,
               padding: '10px 0',

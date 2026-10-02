@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Trophy, Award, Sparkles, RefreshCw, Home, ArrowRight, Zap } from 'lucide-react';
+import { Sparkles, RefreshCw, Home, ArrowRight } from 'lucide-react';
 import { GameButton } from '../common/GameButton';
 import confetti from 'canvas-confetti';
 
@@ -58,6 +58,7 @@ export const VictoryScreen: React.FC<VictoryScreenProps> = ({
 
       {/* Main Victory Card */}
       <div
+        className="modal-card"
         style={{
           width: '100%',
           maxWidth: '460px',

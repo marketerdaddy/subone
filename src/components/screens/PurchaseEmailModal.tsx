@@ -1,6 +1,5 @@
 import React from 'react';
-import { CheckCircle2, X, ExternalLink, ShieldCheck, Mail, ArrowRight } from 'lucide-react';
-import { GameButton } from '../common/GameButton';
+import { CheckCircle2, X } from 'lucide-react';
 
 interface PurchaseEmailModalProps {
   orderId: string;

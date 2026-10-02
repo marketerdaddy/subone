@@ -1,36 +1,39 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { GameState, PlayerProfile, ActivePowerup, Character, GameSettings } from './types/game';
 import { storageService } from './services/storage/storageService';
 import { gameApi } from './services/api/gameApi';
 import { GameEngine } from './game/engine/GameEngine';
-import { CHARACTERS } from './config/gameConfig';
+import { CHARACTERS, generateLevelInfo } from './config/gameConfig';
+
+// Core gameplay path (Direct imports for zero latency)
 import { SplashLoadingScreen } from './components/screens/SplashLoadingScreen';
 import { MainMenu } from './components/menu/MainMenu';
 import { GameplayHUD } from './components/hud/GameplayHUD';
-import { ShopScreen } from './components/screens/ShopScreen';
-import { CharacterSelection } from './components/screens/CharacterSelection';
-import { PlayerProfile as PlayerProfileScreen } from './components/screens/PlayerProfile';
-import { MissionsScreen } from './components/screens/MissionsScreen';
-import { DailyRewardsModal } from './components/screens/DailyRewardsModal';
-import { LeaderboardScreen } from './components/screens/LeaderboardScreen';
-import { SettingsModal } from './components/screens/SettingsModal';
-import { GameOverModal } from './components/screens/GameOverModal';
-import { PauseModal } from './components/screens/PauseModal';
 import { LevelIntroScreen } from './components/screens/LevelIntroScreen';
+import { PauseModal } from './components/screens/PauseModal';
+import { GameOverModal } from './components/screens/GameOverModal';
 import { VictoryScreen } from './components/screens/VictoryScreen';
-import { EventsScreen } from './components/screens/EventsScreen';
-import { ClanScreen } from './components/screens/ClanScreen';
-import { CharacterCustomization } from './components/screens/CharacterCustomization';
-import { PurchaseEmailModal } from './components/screens/PurchaseEmailModal';
-import { AdminDashboardModal } from './components/screens/AdminDashboardModal';
-import { generateLevelInfo } from './config/gameConfig';
+
+// Secondary screens (Code-split with dynamic lazy loading)
+const ShopScreen = lazy(() => import('./components/screens/ShopScreen').then((m) => ({ default: m.ShopScreen })));
+const CharacterSelection = lazy(() => import('./components/screens/CharacterSelection').then((m) => ({ default: m.CharacterSelection })));
+const PlayerProfileScreen = lazy(() => import('./components/screens/PlayerProfile').then((m) => ({ default: m.PlayerProfile })));
+const MissionsScreen = lazy(() => import('./components/screens/MissionsScreen').then((m) => ({ default: m.MissionsScreen })));
+const DailyRewardsModal = lazy(() => import('./components/screens/DailyRewardsModal').then((m) => ({ default: m.DailyRewardsModal })));
+const LeaderboardScreen = lazy(() => import('./components/screens/LeaderboardScreen').then((m) => ({ default: m.LeaderboardScreen })));
+const SettingsModal = lazy(() => import('./components/screens/SettingsModal').then((m) => ({ default: m.SettingsModal })));
+const EventsScreen = lazy(() => import('./components/screens/EventsScreen').then((m) => ({ default: m.EventsScreen })));
+const ClanScreen = lazy(() => import('./components/screens/ClanScreen').then((m) => ({ default: m.ClanScreen })));
+const CharacterCustomization = lazy(() => import('./components/screens/CharacterCustomization').then((m) => ({ default: m.CharacterCustomization })));
+const PurchaseEmailModal = lazy(() => import('./components/screens/PurchaseEmailModal').then((m) => ({ default: m.PurchaseEmailModal })));
+const AdminDashboardModal = lazy(() => import('./components/screens/AdminDashboardModal').then((m) => ({ default: m.AdminDashboardModal })));
 
 export const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>('LOADING');
   const [profile, setProfile] = useState<PlayerProfile>(storageService.loadProfile());
   const [showAdmin, setShowAdmin] = useState<boolean>(false);
   const [showEmailReceipt, setShowEmailReceipt] = useState<boolean>(false);
-  const [emailReceiptData, setEmailReceiptData] = useState<{
+  const [emailReceiptData] = useState<{
     orderId: string;
     productName: string;
     amount: string;
@@ -60,6 +63,11 @@ export const App: React.FC = () => {
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const gameEngineRef = useRef<GameEngine | null>(null);
+  const profileRef = useRef<PlayerProfile>(profile);
+
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
 
   // Initial cloud sync
   useEffect(() => {
@@ -71,7 +79,7 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  // Initialize 3D GameEngine once container is mounted
+  // Initialize 3D GameEngine ONCE when container mounts
   useEffect(() => {
     if (!canvasContainerRef.current) return;
 
@@ -88,7 +96,8 @@ export const App: React.FC = () => {
           setActivePowerups(powerups);
         },
         onGameOver: (runData) => {
-          const isHigh = runData.score > profile.stats.highestScore;
+          const currentProfile = profileRef.current;
+          const isHigh = runData.score > currentProfile.stats.highestScore;
           setIsNewHighScore(isHigh);
           setLastRunData(runData);
 
@@ -106,7 +115,8 @@ export const App: React.FC = () => {
           setGameState('GAME_OVER');
         },
         onLevelComplete: (levelNumber, runData) => {
-          const isHigh = runData.score > profile.stats.highestScore;
+          const currentProfile = profileRef.current;
+          const isHigh = runData.score > currentProfile.stats.highestScore;
           setIsNewHighScore(isHigh);
           setLastRunData({ ...runData, obstaclesAvoided: 15 });
 
@@ -130,8 +140,8 @@ export const App: React.FC = () => {
         },
       });
 
-      engine.applyQualitySettings(profile.settings.graphicsQuality);
-      const activeChar = CHARACTERS.find((c) => c.id === profile.selectedCharacterId) || CHARACTERS[0];
+      engine.applyQualitySettings(profileRef.current.settings.graphicsQuality);
+      const activeChar = CHARACTERS.find((c) => c.id === profileRef.current.selectedCharacterId) || CHARACTERS[0];
       engine.setCharacter(activeChar);
 
       gameEngineRef.current = engine;
@@ -143,7 +153,22 @@ export const App: React.FC = () => {
         gameEngineRef.current = null;
       }
     };
-  }, [profile.selectedCharacterId, profile.settings.graphicsQuality, profile.stats.highestScore]);
+  }, []);
+
+  // Update active character without recreating engine
+  useEffect(() => {
+    if (gameEngineRef.current) {
+      const activeChar = CHARACTERS.find((c) => c.id === profile.selectedCharacterId) || CHARACTERS[0];
+      gameEngineRef.current.setCharacter(activeChar);
+    }
+  }, [profile.selectedCharacterId]);
+
+  // Update graphics quality without recreating engine
+  useEffect(() => {
+    if (gameEngineRef.current) {
+      gameEngineRef.current.applyQualitySettings(profile.settings.graphicsQuality);
+    }
+  }, [profile.settings.graphicsQuality]);
 
   // Start game run
   const handleStartRun = (levelNumber: number = 1, isEndless: boolean = false) => {
@@ -227,7 +252,7 @@ export const App: React.FC = () => {
       {gameState === 'MAIN_MENU' && (
         <MainMenu
           profile={profile}
-          onPlay={(levelNum, isEndless) => {
+          onPlay={(levelNum, _isEndless) => {
             setTargetLevel(levelNum);
             setGameState('LEVEL_INTRO');
           }}
@@ -312,134 +337,137 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 8. Characters Screen */}
-      {gameState === 'CHARACTERS' && (
-        <CharacterSelection
-          profile={profile}
-          onBack={() => setGameState('MAIN_MENU')}
-          onSelectCharacter={handleSelectCharacter}
-          onProfileUpdated={(updated) => setProfile(updated)}
-        />
-      )}
+      {/* Secondary Screens & Modals with Suspense Code-Splitting */}
+      <Suspense fallback={null}>
+        {/* 8. Characters Screen */}
+        {gameState === 'CHARACTERS' && (
+          <CharacterSelection
+            profile={profile}
+            onBack={() => setGameState('MAIN_MENU')}
+            onSelectCharacter={handleSelectCharacter}
+            onProfileUpdated={(updated) => setProfile(updated)}
+          />
+        )}
 
-      {/* 9. Character Customization */}
-      {gameState === 'CUSTOMIZATION' && (
-        <CharacterCustomization
-          character={CHARACTERS.find((c) => c.id === profile.selectedCharacterId) || CHARACTERS[0]}
-          onBack={() => setGameState('MAIN_MENU')}
-          onSaveCustomization={(charId, skinId) => {
-            const char = CHARACTERS.find((c) => c.id === charId);
-            if (char) {
-              char.activeSkinId = skinId;
-              handleSelectCharacter(char);
-            }
-            setGameState('MAIN_MENU');
-          }}
-        />
-      )}
+        {/* 9. Character Customization */}
+        {gameState === 'CUSTOMIZATION' && (
+          <CharacterCustomization
+            character={CHARACTERS.find((c) => c.id === profile.selectedCharacterId) || CHARACTERS[0]}
+            onBack={() => setGameState('MAIN_MENU')}
+            onSaveCustomization={(charId, skinId) => {
+              const char = CHARACTERS.find((c) => c.id === charId);
+              if (char) {
+                char.activeSkinId = skinId;
+                handleSelectCharacter(char);
+              }
+              setGameState('MAIN_MENU');
+            }}
+          />
+        )}
 
-      {/* 10. Limited-Time Events */}
-      {gameState === 'EVENTS' && (
-        <EventsScreen
-          coins={profile.coins}
-          gems={profile.gems}
-          onBack={() => setGameState('MAIN_MENU')}
-          onPlayEventRun={(lvl) => handleStartRun(lvl)}
-          onClaimReward={(reward) => {
-            const updated = storageService.updateCoinsAndGems(reward.coins || 0, reward.gems || 0);
-            setProfile(updated);
-          }}
-        />
-      )}
+        {/* 10. Limited-Time Events */}
+        {gameState === 'EVENTS' && (
+          <EventsScreen
+            coins={profile.coins}
+            gems={profile.gems}
+            onBack={() => setGameState('MAIN_MENU')}
+            onPlayEventRun={(lvl) => handleStartRun(lvl)}
+            onClaimReward={(reward) => {
+              const updated = storageService.updateCoinsAndGems(reward.coins || 0, reward.gems || 0);
+              setProfile(updated);
+            }}
+          />
+        )}
 
-      {/* 11. Clan Screen & Boss Raids */}
-      {gameState === 'CLANS' && (
-        <ClanScreen
-          coins={profile.coins}
-          gems={profile.gems}
-          onBack={() => setGameState('MAIN_MENU')}
-          onAttackBoss={(_bossId) => handleStartRun(profile.level)}
-        />
-      )}
+        {/* 11. Clan Screen & Boss Raids */}
+        {gameState === 'CLANS' && (
+          <ClanScreen
+            coins={profile.coins}
+            gems={profile.gems}
+            onBack={() => setGameState('MAIN_MENU')}
+            onAttackBoss={(_bossId) => handleStartRun(profile.level)}
+          />
+        )}
 
-      {/* 12. Shop Screen */}
-      {gameState === 'SHOP' && (
-        <ShopScreen
-          profile={profile}
-          onBack={() => setGameState('MAIN_MENU')}
-          onProfileUpdated={(updated) => setProfile(updated)}
-        />
-      )}
+        {/* 12. Shop Screen */}
+        {gameState === 'SHOP' && (
+          <ShopScreen
+            profile={profile}
+            onBack={() => setGameState('MAIN_MENU')}
+            onProfileUpdated={(updated) => setProfile(updated)}
+          />
+        )}
 
-      {/* 13. Player Profile Screen */}
-      {gameState === 'PROFILE' && (
-        <PlayerProfileScreen
-          profile={profile}
-          onBack={() => setGameState('MAIN_MENU')}
-          onOpenSettings={() => setGameState('SETTINGS')}
-          onOpenAdmin={() => setShowAdmin(true)}
-        />
-      )}
+        {/* 13. Player Profile Screen */}
+        {gameState === 'PROFILE' && (
+          <PlayerProfileScreen
+            profile={profile}
+            onBack={() => setGameState('MAIN_MENU')}
+            onOpenSettings={() => setGameState('SETTINGS')}
+            onOpenAdmin={() => setShowAdmin(true)}
+          />
+        )}
 
-      {/* 14. Missions Screen */}
-      {gameState === 'MISSIONS' && (
-        <MissionsScreen
-          profile={profile}
-          onBack={() => setGameState('MAIN_MENU')}
-          onProfileUpdated={(updated) => setProfile(updated)}
-        />
-      )}
+        {/* 14. Missions Screen */}
+        {gameState === 'MISSIONS' && (
+          <MissionsScreen
+            profile={profile}
+            onBack={() => setGameState('MAIN_MENU')}
+            onProfileUpdated={(updated) => setProfile(updated)}
+          />
+        )}
 
-      {/* 15. Leaderboard Screen */}
-      {gameState === 'LEADERBOARD' && (
-        <LeaderboardScreen
-          profile={profile}
-          onBack={() => setGameState('MAIN_MENU')}
-        />
-      )}
+        {/* 15. Leaderboard Screen */}
+        {gameState === 'LEADERBOARD' && (
+          <LeaderboardScreen
+            profile={profile}
+            onBack={() => setGameState('MAIN_MENU')}
+          />
+        )}
 
-      {/* 16. Daily Rewards Modal */}
-      {gameState === 'DAILY_REWARD' && (
-        <DailyRewardsModal
-          profile={profile}
-          onClose={() => setGameState('MAIN_MENU')}
-          onProfileUpdated={(updated) => setProfile(updated)}
-        />
-      )}
+        {/* 16. Daily Rewards Modal */}
+        {gameState === 'DAILY_REWARD' && (
+          <DailyRewardsModal
+            profile={profile}
+            onClose={() => setGameState('MAIN_MENU')}
+            onProfileUpdated={(updated) => setProfile(updated)}
+          />
+        )}
 
-      {/* 17. Settings Modal */}
-      {gameState === 'SETTINGS' && (
-        <SettingsModal
-          profile={profile}
-          onBack={() => setGameState('MAIN_MENU')}
-          onSettingsChanged={handleSettingsChanged}
-        />
-      )}
+        {/* 17. Settings Modal */}
+        {gameState === 'SETTINGS' && (
+          <SettingsModal
+            profile={profile}
+            onBack={() => setGameState('MAIN_MENU')}
+            onSettingsChanged={handleSettingsChanged}
+          />
+        )}
 
-      {/* 18. Purchase Confirmation Email Preview Modal */}
-      {showEmailReceipt && (
-        <PurchaseEmailModal
-          orderId={emailReceiptData.orderId}
-          productName={emailReceiptData.productName}
-          amount={emailReceiptData.amount}
-          date={emailReceiptData.date}
-          playerName={profile.username}
-          onClose={() => setShowEmailReceipt(false)}
-        />
-      )}
+        {/* 18. Purchase Confirmation Email Preview Modal */}
+        {showEmailReceipt && (
+          <PurchaseEmailModal
+            orderId={emailReceiptData.orderId}
+            productName={emailReceiptData.productName}
+            amount={emailReceiptData.amount}
+            date={emailReceiptData.date}
+            playerName={profile.username}
+            onClose={() => setShowEmailReceipt(false)}
+          />
+        )}
 
-      {/* 19. Admin Dashboard Modal */}
-      {showAdmin && (
-        <AdminDashboardModal
-          profile={profile}
-          onClose={() => setShowAdmin(false)}
-          onProfileUpdated={(updated) => setProfile(updated)}
-          onStartLevel={(lvl) => {
-            setShowAdmin(false);
-            handleStartRun(lvl);
-          }}
-        />
-      )}
+        {/* 19. Admin Dashboard Modal */}
+        {showAdmin && (
+          <AdminDashboardModal
+            profile={profile}
+            onClose={() => setShowAdmin(false)}
+            onProfileUpdated={(updated) => setProfile(updated)}
+            onStartLevel={(lvl) => {
+              setShowAdmin(false);
+              handleStartRun(lvl);
+            }}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };

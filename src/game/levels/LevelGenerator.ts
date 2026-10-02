@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { GAME_CONSTANTS, BIOMES, generateLevelInfo } from '../../config/gameConfig';
-import { BiomeConfig, BiomeType, PowerupType } from '../../types/game';
+import { BiomeConfig, PowerupType } from '../../types/game';
 import { ObstaclePool, ObstacleType } from '../obstacles/ObstaclePool';
 import { CollectiblePool } from '../collectibles/CollectiblePool';
+import { ProceduralTextures } from '../textures/ProceduralTextures';
 
 export interface TrackChunk {
   group: THREE.Group;
@@ -27,6 +28,8 @@ export class LevelGenerator {
   private trackMaterial!: THREE.MeshStandardMaterial;
   private railMaterial!: THREE.MeshBasicMaterial;
   private buildingMaterial!: THREE.MeshStandardMaterial;
+  private guardrailMaterial!: THREE.MeshStandardMaterial;
+  private neonSigns: string[] = ['NEON RUN', 'CYBERDRIVE', 'NEXUS', 'APEX 500', 'HYPERDRIVE'];
 
   constructor(obstaclePool: ObstaclePool, collectiblePool: CollectiblePool) {
     this.group = new THREE.Group();
@@ -37,29 +40,32 @@ export class LevelGenerator {
 
   private initMaterials() {
     this.trackMaterial = new THREE.MeshStandardMaterial({
-      color: 0x111827,
-      roughness: 0.8,
-      metalness: 0.2,
+      map: ProceduralTextures.getHighwayTrackTexture(),
+      roughness: 0.35,
+      metalness: 0.5,
     });
     this.railMaterial = new THREE.MeshBasicMaterial({
-      color: 0x38bdf8,
+      color: 0x00f0ff,
     });
     this.buildingMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1e1b4b,
-      roughness: 0.5,
+      map: ProceduralTextures.getBuildingTexture(215),
+      roughness: 0.4,
       metalness: 0.5,
+    });
+    this.guardrailMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      metalness: 0.8,
+      roughness: 0.3,
     });
   }
 
   public setLevel(levelNumber: number) {
     this.currentLevelNumber = levelNumber;
     const levelInfo = generateLevelInfo(levelNumber);
-    this.currentBiome = BIOMES[levelInfo.biome];
+    this.currentBiome = BIOMES[levelInfo.biome] || BIOMES.NEON_CITY;
 
-    // Update materials for biome
-    this.trackMaterial.color.set(this.currentBiome.trackColor);
-    this.railMaterial.color.set(this.currentBiome.railColor);
-    this.buildingMaterial.color.set(this.currentBiome.buildingColors[0]);
+    // Keep rich cyber palette active
+    this.railMaterial.color.set(this.currentBiome.railColor || 0x00f0ff);
 
     // Initialize deterministic PRNG seed based on level
     this.rngSeed = (levelNumber * 7919 + 65537) % 2147483647;
@@ -113,7 +119,7 @@ export class LevelGenerator {
 
     const chunkGroup = new THREE.Group();
 
-    // 1. Build 3-Lane Track Bed
+    // 1. Build 3-Lane Track Bed with High-Res Asphalt Texture
     const trackWidth = GAME_CONSTANTS.LANE_WIDTH * 3.4;
     const trackGeo = new THREE.BoxGeometry(trackWidth, 0.4, GAME_CONSTANTS.CHUNK_LENGTH);
     const trackMesh = new THREE.Mesh(trackGeo, this.trackMaterial);
@@ -123,17 +129,30 @@ export class LevelGenerator {
 
     // Glowing Neon Rails along the 3 lanes
     [-GAME_CONSTANTS.LANE_WIDTH * 1.5, -GAME_CONSTANTS.LANE_WIDTH * 0.5, GAME_CONSTANTS.LANE_WIDTH * 0.5, GAME_CONSTANTS.LANE_WIDTH * 1.5].forEach((rx) => {
-      const railGeo = new THREE.BoxGeometry(0.12, 0.1, GAME_CONSTANTS.CHUNK_LENGTH);
+      const railGeo = new THREE.BoxGeometry(0.12, 0.12, GAME_CONSTANTS.CHUNK_LENGTH);
       const rail = new THREE.Mesh(railGeo, this.railMaterial);
-      rail.position.set(rx, 0.05, zStart - GAME_CONSTANTS.CHUNK_LENGTH / 2);
+      rail.position.set(rx, 0.06, zStart - GAME_CONSTANTS.CHUNK_LENGTH / 2);
       chunkGroup.add(rail);
     });
 
-    // 2. Procedural City / Biome Scenery (Buildings, Towers, Spire Archways)
+    // Outer Guardrails / Crash Barriers on Highway Edges
+    [-trackWidth / 2, trackWidth / 2].forEach((bx) => {
+      const barrierGeo = new THREE.BoxGeometry(0.2, 0.8, GAME_CONSTANTS.CHUNK_LENGTH);
+      const barrier = new THREE.Mesh(barrierGeo, this.guardrailMaterial);
+      barrier.position.set(bx, 0.3, zStart - GAME_CONSTANTS.CHUNK_LENGTH / 2);
+      chunkGroup.add(barrier);
+
+      // Neon Top Strip on Guardrail
+      const stripGeo = new THREE.BoxGeometry(0.08, 0.08, GAME_CONSTANTS.CHUNK_LENGTH);
+      const strip = new THREE.Mesh(stripGeo, this.railMaterial);
+      strip.position.set(bx, 0.72, zStart - GAME_CONSTANTS.CHUNK_LENGTH / 2);
+      chunkGroup.add(strip);
+    });
+
+    // 2. Procedural City Scenery (Textured High-Rise Skyscrapers, Neon Billboards, Gantries)
     this.buildChunkScenery(chunkGroup, zStart);
 
     // 3. Procedural Obstacles & Collectibles Generation
-    // Never spawn obstacles in the very first safe start chunk (chunkIdx === 0)
     if (chunkIdx > 0) {
       this.populateChunkContent(zStart);
     }
@@ -150,54 +169,95 @@ export class LevelGenerator {
   }
 
   private buildChunkScenery(chunkGroup: THREE.Group, zStart: number) {
-    const biome = this.currentBiome;
-    const bColor1 = biome.buildingColors[0];
-    const bColor2 = biome.buildingColors[1] || bColor1;
-
-    // Left and right side background scenery
+    // Left and right side background scenery with textured skyscrapers
     [-1, 1].forEach((side) => {
       const numBuildings = 4;
       for (let i = 0; i < numBuildings; i++) {
-        const height = 15 + this.random() * 35;
-        const width = 8 + this.random() * 8;
-        const depth = 10 + this.random() * 8;
-        const xDist = side * (10 + width / 2 + this.random() * 4);
-        const zDist = zStart - (i * 15 + this.random() * 5);
+        const height = 35 + this.random() * 50;
+        const width = 12 + this.random() * 8;
+        const depth = 14 + this.random() * 10;
+        const xDist = side * (8.5 + width / 2 + this.random() * 4);
+        const zDist = zStart - (i * 15 + this.random() * 4);
 
+        // Main Skyscraper Body
         const bGeo = new THREE.BoxGeometry(width, height, depth);
-        const bMat = new THREE.MeshStandardMaterial({
-          color: this.random() > 0.5 ? bColor1 : bColor2,
-          roughness: 0.6,
-          metalness: 0.4,
-        });
-        const building = new THREE.Mesh(bGeo, bMat);
+        const building = new THREE.Mesh(bGeo, this.buildingMaterial);
         building.position.set(xDist, height / 2 - 2, zDist);
         chunkGroup.add(building);
 
-        // Hologram / Neon light windows on building
-        if (this.random() > 0.4) {
-          const winGeo = new THREE.BoxGeometry(width * 0.8, 1.2, depth * 0.8);
-          const winMat = new THREE.MeshBasicMaterial({ color: biome.railColor });
-          const win = new THREE.Mesh(winGeo, winMat);
-          win.position.set(xDist, height * 0.6, zDist);
-          chunkGroup.add(win);
+        // Rooftop Antenna / Beacon Spire
+        const spireH = 8 + this.random() * 12;
+        const spireGeo = new THREE.CylinderGeometry(0.15, 0.4, spireH, 6);
+        const spireMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+        const spire = new THREE.Mesh(spireGeo, spireMat);
+        spire.position.set(xDist, height + spireH / 2 - 2, zDist);
+        chunkGroup.add(spire);
+
+        // Blinking Red/Cyan Aircraft Warning Beacon at tip
+        const beaconGeo = new THREE.SphereGeometry(0.4, 8, 8);
+        const beaconMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
+        const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+        beacon.position.set(xDist, height + spireH - 2, zDist);
+        chunkGroup.add(beacon);
+
+        // Holographic Cyberpunk Billboard Sign attached to select buildings
+        if (i % 2 === 0 && this.random() > 0.25) {
+          const signIdx = Math.floor(this.random() * this.neonSigns.length);
+          const signText = this.neonSigns[signIdx];
+          const signColor = this.random() > 0.5 ? '#00f0ff' : '#ec4899';
+          const signTex = ProceduralTextures.getNeonSignTexture(signText, signColor);
+
+          const signGeo = new THREE.PlaneGeometry(8, 4);
+          const signMat = new THREE.MeshBasicMaterial({
+            map: signTex,
+            transparent: true,
+            side: THREE.DoubleSide,
+          });
+          const billboard = new THREE.Mesh(signGeo, signMat);
+          // Face toward track center
+          const signX = side > 0 ? xDist - width / 2 - 0.2 : xDist + width / 2 + 0.2;
+          billboard.position.set(signX, 10 + this.random() * 16, zDist);
+          billboard.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+          chunkGroup.add(billboard);
         }
       }
     });
 
-    // Overhead Archway every 2 chunks
+    // Overhead Cyber Highway Gantry / Digital Sign every 2 chunks
     if (this.nextChunkIndex % 2 === 0) {
-      const archGeo = new THREE.BoxGeometry(14, 1.2, 1.5);
-      const archMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
-      const arch = new THREE.Mesh(archGeo, archMat);
-      arch.position.set(0, 7.5, zStart - 30);
-      chunkGroup.add(arch);
+      const gantryGroup = new THREE.Group();
+      gantryGroup.position.set(0, 0, zStart - 30);
 
-      // Glowing under-strip
-      const archGlowGeo = new THREE.BoxGeometry(13, 0.2, 0.4);
-      const archGlow = new THREE.Mesh(archGlowGeo, this.railMaterial);
-      archGlow.position.set(0, 6.8, zStart - 30);
-      chunkGroup.add(archGlow);
+      // Support pillars
+      [-5.5, 5.5].forEach((px) => {
+        const pGeo = new THREE.CylinderGeometry(0.3, 0.35, 8.5, 8);
+        const pMesh = new THREE.Mesh(pGeo, this.guardrailMaterial);
+        pMesh.position.set(px, 4.25, 0);
+        gantryGroup.add(pMesh);
+      });
+
+      // Overhead crossbeam
+      const beamGeo = new THREE.BoxGeometry(11.8, 1.4, 1.2);
+      const beamMesh = new THREE.Mesh(beamGeo, this.guardrailMaterial);
+      beamMesh.position.set(0, 8.0, 0);
+      gantryGroup.add(beamMesh);
+
+      // Overhead Digital Signboard
+      const signTex = ProceduralTextures.getNeonSignTexture('NEXUS HIGHWAY', '#00f0ff');
+      const signGeo = new THREE.PlaneGeometry(8.5, 2.0);
+      const signMat = new THREE.MeshBasicMaterial({ map: signTex, transparent: true });
+      const sign = new THREE.Mesh(signGeo, signMat);
+      sign.position.set(0, 8.0, 0.62);
+      gantryGroup.add(sign);
+
+      // Under-gantry glowing hazard tripwire
+      const tripGeo = new THREE.BoxGeometry(11, 0.15, 0.15);
+      const tripMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const trip = new THREE.Mesh(tripGeo, tripMat);
+      trip.position.set(0, 7.2, 0);
+      gantryGroup.add(trip);
+
+      chunkGroup.add(gantryGroup);
     }
   }
 

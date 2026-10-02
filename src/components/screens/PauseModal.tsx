@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Play, RotateCcw, Home, Settings } from 'lucide-react';
 import { GameButton } from '../common/GameButton';
 
@@ -30,6 +30,7 @@ export const PauseModal: React.FC<PauseModalProps> = ({
       }}
     >
       <div
+        className="modal-card"
         style={{
           width: '100%',
           maxWidth: '360px',
