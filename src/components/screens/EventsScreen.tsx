@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Clock, Sparkles, CheckCircle2, ChevronRight, Lock } from 'lucide-react';
 import { GameButton } from '../common/GameButton';
 import { CurrencyDisplay } from '../common/CurrencyDisplay';
+import { getAssetUrl, BANNER_FALLBACK_SVG } from '../../utils/assetUtils';
 import confetti from 'canvas-confetti';
 
 interface EventsScreenProps {
@@ -156,8 +157,11 @@ export const EventsScreen: React.FC<EventsScreenProps> = ({
           }}
         >
           <img
-            src="/images/event_nightfall.jpg"
+            src={getAssetUrl('images/event_nightfall.jpg')}
             alt="Nexus Nightfall"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = BANNER_FALLBACK_SVG;
+            }}
             style={{ width: '100%', height: '200px', objectFit: 'cover', display: 'block' }}
           />
           <div

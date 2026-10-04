@@ -1,4 +1,5 @@
 import { Character, PowerupConfig, BiomeConfig, BiomeType, LevelInfo, ShopItem, Mission, Achievement, DailyRewardDay } from '../types/game';
+import { getAssetUrl } from '../utils/assetUtils';
 
 export const GAME_CONSTANTS = {
   LANE_WIDTH: 2.8,
@@ -24,8 +25,8 @@ export const CHARACTERS: Character[] = [
     title: 'The Cyber Prodigy',
     description: 'Fast, agile and always ready for the next challenge.',
     rarity: 'epic',
-    avatarUrl: '/images/char_zayn.jpg',
-    fullImageUrl: '/images/char_zayn.jpg',
+    avatarUrl: getAssetUrl('images/char_zayn.jpg'),
+    fullImageUrl: getAssetUrl('images/char_zayn.jpg'),
     stats: {
       speed: 95,
       jump: 80,
@@ -75,8 +76,8 @@ export const CHARACTERS: Character[] = [
     title: 'Legendary Operative',
     description: 'Unlock the power of the shadows. Cloaks through obstacles and pulls gems.',
     rarity: 'legendary',
-    avatarUrl: '/images/char_shadow.jpg',
-    fullImageUrl: '/images/char_shadow.jpg',
+    avatarUrl: getAssetUrl('images/char_shadow.jpg'),
+    fullImageUrl: getAssetUrl('images/char_shadow.jpg'),
     stats: {
       speed: 98,
       jump: 92,
@@ -116,8 +117,8 @@ export const CHARACTERS: Character[] = [
     title: 'High-Voltage Sprinter',
     description: 'Energetic cyber runner armed with magnetic pulse gauntlets.',
     rarity: 'rare',
-    avatarUrl: '/images/char_spark.jpg',
-    fullImageUrl: '/images/char_spark.jpg',
+    avatarUrl: getAssetUrl('images/char_spark.jpg'),
+    fullImageUrl: getAssetUrl('images/char_spark.jpg'),
     stats: {
       speed: 88,
       jump: 84,
@@ -157,8 +158,8 @@ export const CHARACTERS: Character[] = [
     title: 'Acrobatic Assassin',
     description: 'Master of aerial flips and ultra-low slides.',
     rarity: 'epic',
-    avatarUrl: '/images/char_shadow.jpg',
-    fullImageUrl: '/images/char_shadow.jpg',
+    avatarUrl: getAssetUrl('images/char_shadow.jpg'),
+    fullImageUrl: getAssetUrl('images/char_shadow.jpg'),
     stats: {
       speed: 92,
       jump: 96,
@@ -198,8 +199,8 @@ export const CHARACTERS: Character[] = [
     title: 'Mythic Sky Queen',
     description: 'Futuristic armored aerialist with extended jetpack duration.',
     rarity: 'mythic',
-    avatarUrl: '/images/char_valkyrie.jpg',
-    fullImageUrl: '/images/char_valkyrie.jpg',
+    avatarUrl: getAssetUrl('images/char_valkyrie.jpg'),
+    fullImageUrl: getAssetUrl('images/char_valkyrie.jpg'),
     stats: {
       speed: 100,
       jump: 98,

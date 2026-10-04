@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Crown } from 'lucide-react';
 import { LeaderboardEntry, PlayerProfile } from '../../types/game';
+import { getAssetUrl, AVATAR_FALLBACK_SVG } from '../../utils/assetUtils';
 import { gameApi } from '../../services/api/gameApi';
 
 interface LeaderboardScreenProps {
@@ -143,8 +144,11 @@ export const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ profile, o
                     {getRankBadge(entry.rank)}
                   </div>
                   <img
-                    src={entry.avatar}
+                    src={getAssetUrl(entry.avatar)}
                     alt={entry.username}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = AVATAR_FALLBACK_SVG;
+                    }}
                     style={{ width: 38, height: 38, borderRadius: '12px', objectFit: 'cover' }}
                   />
                   <div>
@@ -181,8 +185,11 @@ export const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ profile, o
             {playerEntry.rank}
           </span>
           <img
-            src={playerEntry.avatar}
+            src={getAssetUrl(playerEntry.avatar)}
             alt={playerEntry.username}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = AVATAR_FALLBACK_SVG;
+            }}
             style={{ width: 40, height: 40, borderRadius: '12px', border: '2px solid #38bdf8', objectFit: 'cover' }}
           />
           <div>

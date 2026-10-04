@@ -1,4 +1,5 @@
 import { PlayerProfile, LeaderboardEntry, LevelInfo } from '../../types/game';
+import { getAssetUrl } from '../../utils/assetUtils';
 
 class GameApiClient {
   private baseUrl = '/api';
@@ -52,7 +53,13 @@ class GameApiClient {
     } catch {
       // offline
     }
-    return [];
+    return [
+      { rank: 1, id: 'u1', username: 'ShadowKing', avatar: getAssetUrl('images/char_shadow.jpg'), score: 2458900, level: 98 },
+      { rank: 2, id: 'u2', username: 'NovaRider', avatar: getAssetUrl('images/char_spark.jpg'), score: 2341670, level: 95 },
+      { rank: 3, id: 'u3', username: 'ValkyriePrime', avatar: getAssetUrl('images/char_valkyrie.jpg'), score: 2198450, level: 92 },
+      { rank: 4, id: 'u4', username: 'PixelHero', avatar: getAssetUrl('images/char_zayn.jpg'), score: 1987320, level: 89 },
+      { rank: 5, id: 'u5', username: 'DragonSoul', avatar: getAssetUrl('images/char_shadow.jpg'), score: 1765210, level: 86 },
+    ];
   }
 
   public async initiatePurchase(productId: string, productName: string, amount: number, currency: string) {

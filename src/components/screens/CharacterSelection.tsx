@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Gauge, ArrowUpCircle, Shield, Magnet } from 'lucide-react';
 import { Character, PlayerProfile } from '../../types/game';
 import { CHARACTERS } from '../../config/gameConfig';
+import { getAssetUrl, AVATAR_FALLBACK_SVG } from '../../utils/assetUtils';
 import { GameButton } from '../common/GameButton';
 import { ProgressBar } from '../common/ProgressBar';
 import { CurrencyDisplay } from '../common/CurrencyDisplay';
@@ -167,8 +168,11 @@ export const CharacterSelection: React.FC<CharacterSelectionProps> = ({
           }}
         >
           <img
-            src={currentChar.fullImageUrl || '/images/char_zayn.jpg'}
+            src={getAssetUrl(currentChar.fullImageUrl || 'images/char_zayn.jpg')}
             alt={currentChar.name}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = AVATAR_FALLBACK_SVG;
+            }}
             style={{
               width: '100%',
               height: '100%',
@@ -320,8 +324,11 @@ export const CharacterSelection: React.FC<CharacterSelectionProps> = ({
               }}
             >
               <img
-                src={char.avatarUrl || '/images/char_zayn.jpg'}
+                src={getAssetUrl(char.avatarUrl || 'images/char_zayn.jpg')}
                 alt={char.name}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = AVATAR_FALLBACK_SVG;
+                }}
                 style={{
                   width: '38px',
                   height: '38px',

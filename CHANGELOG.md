@@ -2,6 +2,15 @@
 
 All notable changes to the **Nexus Run - Advanced Endless Runner Mobile Game** will be documented in this file.
 
+## [1.1.1] - 2026-10-04
+
+### Phase 15: Image Resolution, Avatar & Banner Fallbacks
+- Created `src/utils/assetUtils.ts` containing `getAssetUrl` to automatically resolve image paths relative to Vite base (`./`) for static GitHub Pages subpath deployment (`/subone/`).
+- Fixed broken leading slash paths (`/images/...`) across `MainMenu`, `ShopScreen`, `EventsScreen`, `CharacterSelection`, `CharacterCustomization`, `LevelIntroScreen`, `VictoryScreen`, and `SplashLoadingScreen`.
+- Created SVG data URI fallbacks (`AVATAR_FALLBACK_SVG` and `BANNER_FALLBACK_SVG`) with `onError` event handling to ensure no broken image icons ever display.
+- Updated `storageService.ts` to use local `char_zayn.jpg` and added auto-migration for cached localStorage profiles containing old external Unsplash URLs or absolute paths.
+- Added offline leaderboard fallback data in `gameApi.ts` referencing local character portraits.
+
 ## [1.1.0] - 2026-10-03
 
 ### Phase 14: GitHub Pages Deployment & Production Release

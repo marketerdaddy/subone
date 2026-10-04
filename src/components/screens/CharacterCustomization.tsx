@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, RotateCw, ZoomIn, Check } from 'lucide-react';
 import { Character } from '../../types/game';
+import { getAssetUrl, AVATAR_FALLBACK_SVG } from '../../utils/assetUtils';
 import { GameButton } from '../common/GameButton';
 
 interface CharacterCustomizationProps {
@@ -120,8 +121,11 @@ export const CharacterCustomization: React.FC<CharacterCustomizationProps> = ({
           }}
         >
           <img
-            src={character.fullImageUrl || character.avatarUrl || '/images/char_zayn.jpg'}
+            src={getAssetUrl(character.fullImageUrl || character.avatarUrl || 'images/char_zayn.jpg')}
             alt={character.name}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = AVATAR_FALLBACK_SVG;
+            }}
             style={{
               width: '100%',
               height: '100%',

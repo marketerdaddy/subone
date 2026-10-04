@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle2, Trophy, Compass, Gamepad2, Award, ShoppingBag, Settings, HelpCircle, LogOut, Terminal } from 'lucide-react';
 import { PlayerProfile as IPlayerProfile, StoredReceipt } from '../../types/game';
+import { getAssetUrl, AVATAR_FALLBACK_SVG } from '../../utils/assetUtils';
 import { CurrencyDisplay } from '../common/CurrencyDisplay';
 import { ProgressBar } from '../common/ProgressBar';
 import { gameApi } from '../../services/api/gameApi';
@@ -90,8 +91,11 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ position: 'relative' }}>
               <img
-                src={profile.avatar}
+                src={getAssetUrl(profile.avatar)}
                 alt={profile.username}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = AVATAR_FALLBACK_SVG;
+                }}
                 style={{
                   width: 64,
                   height: 64,

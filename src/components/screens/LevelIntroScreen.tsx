@@ -2,6 +2,7 @@ import React from 'react';
 import { Play, ShieldAlert, Award, Clock, ArrowLeft, Flame, Sparkles } from 'lucide-react';
 import { LevelInfo } from '../../types/game';
 import { GameButton } from '../common/GameButton';
+import { getAssetUrl } from '../../utils/assetUtils';
 
 interface LevelIntroScreenProps {
   levelInfo: LevelInfo;
@@ -24,7 +25,7 @@ export const LevelIntroScreen: React.FC<LevelIntroScreenProps> = ({
         flexDirection: 'column',
         justifyContent: 'space-between',
         padding: '24px 20px',
-        backgroundImage: `radial-gradient(circle at 50% 40%, rgba(10, 13, 30, 0.45) 0%, rgba(5, 7, 15, 0.9) 75%, #03050a 100%), url("/images/event_nightfall.jpg")`,
+        backgroundImage: `radial-gradient(circle at 50% 40%, rgba(10, 13, 30, 0.45) 0%, rgba(5, 7, 15, 0.9) 75%, #03050a 100%), url("${getAssetUrl('images/event_nightfall.jpg')}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Zap } from 'lucide-react';
+import { getAssetUrl } from '../../utils/assetUtils';
 
 interface SplashLoadingScreenProps {
   onLoaded: () => void;
@@ -51,7 +52,7 @@ export const SplashLoadingScreen: React.FC<SplashLoadingScreenProps> = ({ onLoad
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '40px 24px',
-        backgroundImage: 'radial-gradient(circle at 50% 40%, rgba(10, 13, 30, 0.45) 0%, rgba(5, 7, 15, 0.85) 75%, #03050a 100%), url("/images/splash_hero.jpg")',
+        backgroundImage: `radial-gradient(circle at 50% 40%, rgba(10, 13, 30, 0.45) 0%, rgba(5, 7, 15, 0.85) 75%, #03050a 100%), url("${getAssetUrl('images/splash_hero.jpg')}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',

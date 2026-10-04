@@ -1,4 +1,5 @@
 import { PlayerProfile, GameSettings } from '../../types/game';
+import { getAssetUrl } from '../../utils/assetUtils';
 
 const STORAGE_KEY = 'nexus_run_player_profile_v1';
 
@@ -16,7 +17,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
 export const DEFAULT_PROFILE: PlayerProfile = {
   id: 'player_user_01',
   username: 'Ansh',
-  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+  avatar: getAssetUrl('images/char_zayn.jpg'),
   verified: true,
   level: 12,
   xp: 640,
@@ -53,7 +54,7 @@ class StorageService {
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         const parsed = JSON.parse(data);
-        return {
+        const profile: PlayerProfile = {
           ...DEFAULT_PROFILE,
           ...parsed,
           stats: { ...DEFAULT_PROFILE.stats, ...(parsed.stats || {}) },
@@ -63,6 +64,11 @@ class StorageService {
             ...(parsed.activePowerupsInventory || {}),
           },
         };
+        // Sanitize avatar if it has old unsplash URL, broken absolute path, or empty
+        if (!profile.avatar || profile.avatar.includes('unsplash') || profile.avatar.startsWith('/images/')) {
+          profile.avatar = getAssetUrl('images/char_zayn.jpg');
+        }
+        return profile;
       }
     } catch (e) {
       console.warn('Failed to load profile from localStorage, using defaults', e);

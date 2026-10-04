@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Sparkles, RefreshCw, Home, ArrowRight } from 'lucide-react';
 import { GameButton } from '../common/GameButton';
+import { getAssetUrl } from '../../utils/assetUtils';
 import confetti from 'canvas-confetti';
 
 interface VictoryScreenProps {
@@ -48,7 +49,7 @@ export const VictoryScreen: React.FC<VictoryScreenProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '30px 20px',
-        backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(30, 27, 75, 0.75) 0%, rgba(10, 13, 30, 0.95) 75%, #05070f 100%), url("/images/main_menu_bg.jpg")',
+        backgroundImage: `radial-gradient(circle at 50% 30%, rgba(30, 27, 75, 0.75) 0%, rgba(10, 13, 30, 0.95) 75%, #05070f 100%), url("${getAssetUrl('images/main_menu_bg.jpg')}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}

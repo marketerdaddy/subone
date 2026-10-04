@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Pause, Magnet, Shield, Zap, Flame, Rocket, Clock, Coins, Diamond, Target, ChevronUp, ChevronDown } from 'lucide-react';
 import { ActivePowerup, PlayerProfile, PowerupType } from '../../types/game';
+import { getAssetUrl, AVATAR_FALLBACK_SVG } from '../../utils/assetUtils';
 
 interface GameplayHUDProps {
   score: number;
@@ -111,8 +112,11 @@ export const GameplayHUD: React.FC<GameplayHUDProps> = ({
         >
           <div style={{ position: 'relative' }}>
             <img
-              src={profile.avatar}
+              src={getAssetUrl(profile.avatar)}
               alt={profile.username}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = AVATAR_FALLBACK_SVG;
+              }}
               style={{
                 width: 42,
                 height: 42,

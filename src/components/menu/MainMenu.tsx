@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { PlayerProfile } from '../../types/game';
 import { CHARACTERS, generateLevelInfo } from '../../config/gameConfig';
+import { getAssetUrl, AVATAR_FALLBACK_SVG } from '../../utils/assetUtils';
 import { CurrencyDisplay } from '../common/CurrencyDisplay';
 import { GameButton } from '../common/GameButton';
 
@@ -121,8 +122,11 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           {/* Avatar with level ring */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <img
-              src={selectedChar.avatarUrl || profile.avatar}
+              src={getAssetUrl(selectedChar.avatarUrl || profile.avatar)}
               alt={profile.username}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = AVATAR_FALLBACK_SVG;
+              }}
               style={{
                 width: 40,
                 height: 40,

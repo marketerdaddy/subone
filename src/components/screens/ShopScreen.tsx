@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldCheck, Magnet, Shield, Rocket, Coins, Gem, ArrowLeft } from 'lucide-react';
 import { PlayerProfile, ShopItem } from '../../types/game';
 import { SHOP_ITEMS } from '../../config/gameConfig';
+import { getAssetUrl, BANNER_FALLBACK_SVG } from '../../utils/assetUtils';
 import { CurrencyDisplay } from '../common/CurrencyDisplay';
 import { GameButton } from '../common/GameButton';
 import { PurchaseConfirmationModal } from './PurchaseConfirmationModal';
@@ -133,8 +134,11 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ profile, onBack, onProfi
               }}
             >
               <img
-                src="/images/shop_featured.jpg"
+                src={getAssetUrl('images/shop_featured.jpg')}
                 alt="Shadow Operative Bundle"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = BANNER_FALLBACK_SVG;
+                }}
                 style={{ width: '100%', height: '170px', objectFit: 'cover', display: 'block' }}
               />
               <div
